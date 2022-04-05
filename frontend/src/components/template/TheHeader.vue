@@ -1,0 +1,74 @@
+<template>
+  <header>
+    <div id="header">
+      <section class="container">
+        <section class="identity">
+          <img src="../../assets/images/logo.png" width="154" class="logo" alt="BC Government Logo" />
+          <div class="site-container">
+            <div class="sitename">{{ title }}</div>
+            <div aria-label="This application is currently in Beta phase" class="Beta-PhaseBanner">Beta</div>
+          </div>
+        </section>
+      </section>
+    </div>
+  </header>
+</template>
+
+<script>
+export default {
+  name: 'TheHeader',
+  data() {
+    return {
+      title: config.APP_TITLE || import.meta.env.VITE_APP_TITLE,
+    }
+  },
+}
+</script>
+
+<style scoped>
+header {
+  height: 80px;
+  background-color: #003366;
+  border-bottom: 2px solid #fcba19;
+}
+header .container {
+  max-width: 1320px;
+  min-width: 1100px;
+  height: 80px;
+  padding: 10px 60px;
+  margin: 0 auto;
+}
+header .container .identity {
+  float: left;
+  height: 60px;
+}
+header .container .identity .logo {
+  display: inline-block;
+  margin: 10px 30px 0 0;
+}
+header .container .identity .sitename {
+  display: inline-block;
+  vertical-align: top;
+  height: 60px;
+  margin: 0;
+  font-size: 1.375rem;
+  line-height: 59px;
+  font-weight: bold;
+  color: #ffffff;
+}
+
+header .site-container {
+  display: inline-block;
+  vertical-align: top;
+}
+
+.Beta-PhaseBanner {
+  color: #fcba19;
+  display: inline-block;
+  padding-left: 5px;
+  padding-top: 12px;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-size: 16px;
+}
+</style>
