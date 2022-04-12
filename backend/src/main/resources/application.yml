@@ -1,6 +1,13 @@
 spring:
   profiles:
     active: dev
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${keycloak.base-oauth-url}
+          jwk-set-uri: ${keycloak.base-oauth-url}/protocol/openid-connect/certs
+          audience: LDAP-ACCOUNT-TRANSFER-API
     
 springdoc:
   swagger-ui:
