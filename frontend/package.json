@@ -16,6 +16,7 @@
     "@vuelidate/core": "^2.0.0-alpha.40",
     "@vuelidate/validators": "^2.0.0-alpha.28",
     "axios": "^0.26.1",
+    "keycloak-js": "^15.0.2",
     "pinia": "^2.0.12",
     "vue": "^3.2.25",
     "vue-router": "4"

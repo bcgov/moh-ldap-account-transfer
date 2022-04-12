@@ -1,4 +1,5 @@
 import axios from 'axios'
+import keycloak from '../keycloak'
 
 export const resources = {
   accounts: {
@@ -6,12 +7,15 @@ export const resources = {
   },
 }
 
-// TODO (dbarrett) Add keycloak request, will be done when keycloak is added to the project
-export function createAxios() {
-  const baseURL = config.SERVICE_URL || import.meta.env.VITE_SERVICE_URL
-  return axios.create({
-    baseURL,
-  })
+export function apiRequest() {
+  function createAxios() {
+    const baseURL = config.SERVICE_URL || import.meta.env.VITE_SERVICE_URL
+    return axios.create({
+      baseURL,
+      headers: { Authorization: 'Bearer ' + keycloak.token },
+    })
+  }
+  return keycloak.updateToken(0).then(createAxios)
 }
 
-export default createAxios
+export default apiRequest

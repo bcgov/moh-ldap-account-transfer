@@ -13,27 +13,35 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import { library } from '@fortawesome/fontawesome-svg-core'
 import router from './router'
+import keycloak from './keycloak'
 
-const app = createApp(App)
+keycloak.onAuthSuccess = async function () {
+    initApp()
+}
 
-// add global components here
-app.component('AppCol', AppCol)
-app.component('AppRow', AppRow)
-app.component('AppInput', AppInput)
-app.component('AppOutput', AppOutput)
-app.component('AppButton', AppButton)
+function initApp() {
+    const app = createApp(App)
 
-app.component('font-awesome-icon', FontAwesomeIcon)
+    // add global components here
+    app.component('AppCol', AppCol)
+    app.component('AppRow', AppRow)
+    app.component('AppInput', AppInput)
+    app.component('AppOutput', AppOutput)
+    app.component('AppButton', AppButton)
 
-// add libraries here
-library.add(faCheckCircle)
-library.add(faExclamationCircle)
-library.add(faExclamationTriangle)
-library.add(faSpinner)
-library.add(faTimes)
+    app.component('font-awesome-icon', FontAwesomeIcon)
 
-// additions to the vue framework
-app.use(router)
-app.use(createPinia())
+    // add libraries here
+    library.add(faCheckCircle)
+    library.add(faExclamationCircle)
+    library.add(faExclamationTriangle)
+    library.add(faSpinner)
+    library.add(faTimes)
 
-app.mount('#app')
+    // additions to the vue framework
+    app.use(router)
+    app.use(createPinia())
+
+    app.mount('#app')
+}
+
