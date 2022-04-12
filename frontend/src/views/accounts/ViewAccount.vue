@@ -25,7 +25,7 @@
 
 <script>
 import { useAlertStore } from '../../stores/alert'
-import AccountsService from '../../services/AccountsService'
+import AccountsService from '../../services/AccountTransferService'
 import useVuelidate from '@vuelidate/core'
 import { required } from '@vuelidate/validators'
 

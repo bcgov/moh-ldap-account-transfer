@@ -7,7 +7,8 @@ spring:
         jwt:
           issuer-uri: ${keycloak.base-oauth-url}
           jwk-set-uri: ${keycloak.base-oauth-url}/protocol/openid-connect/certs
-    
+ldap-api:
+  url: ${ldap.base-url}/ldap/users
 springdoc:
   swagger-ui:
     path: /docs/swagger-ui.html

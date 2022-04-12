@@ -1,4 +1,4 @@
-package ca.bc.gov.hlth.accounttransfer.model.rest.accounts;
+package ca.bc.gov.hlth.accounttransfer.model.rest.accountTransfer;
 
 import ca.bc.gov.hlth.accounttransfer.model.rest.BaseResponse;
 

@@ -1,11 +1,72 @@
 <template>
   <section>
     <h1>Welcome to the Account Transfer application</h1>
+    <p>To transfer your account to the new MSP Direct please enter your HealthNetBC Username and Password.</p>
+    <p>A HealthNetBC Username will typically have a format similar to 12345-asmith</p>
+
+    <form @submit.prevent="submitForm">
+      <AppRow>
+        <AppCol class="col3">
+          <AppInput :e-model="v$.username" id="username" label="Username" type="text" v-model.trim="username" />
+        </AppCol>
+      </AppRow>
+      <AppRow>
+        <AppCol class="col3">
+          <AppInput :e-model="v$.password" id="password" label="Password" type="text" v-model.trim="password" />
+        </AppCol>
+      </AppRow>
+      <AppRow>
+        <AppButton :submitting="submitting" mode="primary" type="submit">Submit</AppButton>
+      </AppRow>
+    </form>
   </section>
 </template>
 
 <script>
+import useVuelidate from '@vuelidate/core'
+import { required } from '@vuelidate/validators'
+import AccountTransferService from '../services/AccountTransferService'
+
 export default {
   name: 'home',
+  setup() {
+    return {
+      v$: useVuelidate()}
+  },
+  data() {
+    return {
+      username: '',
+      password: '',
+      submitting: false,
+    }
+  },
+  methods: {
+    async submitForm() {
+      await this.v$.$validate()
+
+      AccountTransferService.transferAccount({
+        username: this.username,
+        password: this.password,
+        application: 'mspdirect'
+      }).then(response => {
+        console.log(response.data)
+      })
+    },
+    resetForm() {
+      this.username = ''
+      this.password = ''
+      this.v$.$reset()
+    }
+  },
+  validations() {
+    return {
+      username: {
+        required
+      },
+      password: {
+        required
+      },
+    }
+  }
 }
 </script>

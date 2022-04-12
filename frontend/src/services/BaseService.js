@@ -3,7 +3,7 @@ import keycloak from '../keycloak'
 
 export const resources = {
   accounts: {
-    getAccount: '/accounts/',
+    transferAccount: '/accountTransfer',
   },
 }
 
