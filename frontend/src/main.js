@@ -1,6 +1,14 @@
 import '@bcgov/bc-sans/css/BCSans.css'
 
-import { faCheckCircle, faExclamationCircle, faExclamationTriangle, faSpinner, faTimes } from '@fortawesome/free-solid-svg-icons'
+import {
+    faCheckCircle,
+    faExclamationCircle,
+    faExclamationTriangle,
+    faEye,
+    faEyeSlash,
+    faSpinner,
+    faTimes
+} from '@fortawesome/free-solid-svg-icons'
 
 import App from './App.vue'
 import AppButton from './components/ui/AppButton.vue'
@@ -37,6 +45,8 @@ function initApp() {
     library.add(faExclamationTriangle)
     library.add(faSpinner)
     library.add(faTimes)
+    library.add(faEye)
+    library.add(faEyeSlash)
 
     // additions to the vue framework
     app.use(router)

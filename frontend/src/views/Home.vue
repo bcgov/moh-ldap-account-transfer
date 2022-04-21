@@ -15,7 +15,10 @@
       </AppRow>
       <AppRow>
         <AppCol class="col3">
-          <AppInput :e-model="v$.password" id="password" label="Password" type="text" v-model.trim="password" />
+          <AppInput :e-model="v$.password" id="password" label="Password" :type="passwordVisible ? 'password' : 'input'" v-model.trim="password" />
+          <span class="password-toggle" @click="passwordVisible = !passwordVisible">
+             <font-awesome-icon :icon="passwordVisible ? 'eye' : 'eye-slash'" aria-hidden="true"/>
+          </span>
         </AppCol>
       </AppRow>
       <AppRow>
@@ -44,11 +47,7 @@ export default {
       username: '',
       password: '',
       submitting: false,
-      result: {
-        status: '',
-        message: '',
-        roleAdded: '',
-      }
+      passwordVisible: false,
     }
   },
   methods: {
@@ -73,11 +72,6 @@ export default {
       }).finally(() => {
             this.submitting = false
       })
-    },
-    resetForm() {
-      this.username = ''
-      this.password = ''
-      this.v$.$reset()
     }
   },
   validations() {
@@ -92,3 +86,11 @@ export default {
   }
 }
 </script>
+<style>
+.password-toggle {
+  position: relative;
+  bottom: 45%;
+  left: 90%;
+  cursor: pointer;
+}
+</style>
