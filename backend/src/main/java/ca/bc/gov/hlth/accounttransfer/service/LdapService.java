@@ -16,8 +16,6 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Service
 public class LdapService {
 
-	private static final Logger logger = LoggerFactory.getLogger(LdapService.class);
-
 	@Autowired
 	private WebClient ldapWebClient;
 

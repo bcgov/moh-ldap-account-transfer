@@ -47,7 +47,7 @@ export default {
       AccountTransferService.transferAccount({
         username: this.username,
         password: this.password,
-        application: 'mspdirect'
+        application: 'MSPDIRECT-SERVICE'
       }).then(response => {
         console.log(response.data)
       })

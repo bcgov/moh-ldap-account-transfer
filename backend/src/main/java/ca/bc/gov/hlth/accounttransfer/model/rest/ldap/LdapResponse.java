@@ -14,7 +14,7 @@ public class LdapResponse {
     private String mspDirectRole;
 
     @JsonProperty("org_details")
-    private String orgDetails;
+    private Object orgDetails;
 
 
     public String getUsername() {
@@ -49,11 +49,11 @@ public class LdapResponse {
         this.mspDirectRole = mspDirectRole;
     }
 
-    public String getOrgDetails() {
+    public Object getOrgDetails() {
         return orgDetails;
     }
 
-    public void setOrgDetails(String orgDetails) {
+    public void setOrgDetails(Object orgDetails) {
         this.orgDetails = orgDetails;
     }
 
@@ -63,7 +63,7 @@ public class LdapResponse {
                 "username='" + username + '\'' +
                 ", authenticated='" + authenticated + '\'' +
                 ", unlocked='" + unlocked + '\'' +
-                ", hcmUserRole='" + mspDirectRole + '\'' +
+                ", hlthregbusinessusergroup='" + mspDirectRole + '\'' +
                 ", orgDetails='" + orgDetails + '\'' +
                 '}';
     }
