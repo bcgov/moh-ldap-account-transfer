@@ -1,10 +1,20 @@
 <template>
   <section>
-    <h1>Welcome to the Account Transfer application</h1>
+    <h1>Welcome to the MSP Direct Account Transfer </h1>
     <p>
-      To transfer your account to the new MSP Direct please enter your HealthNetBC Username and Password.
+      To transfer your MSP Direct permissions to your new account you will need to enter your HealthNetBC Username and Password.
+    </p>
+    <p>
+      <b>Your HealthNetBC UserName</b> <br/>
+      A HealthNetBC Username will typically have the format: <b>Org ID-FirstInitial, Last Name</b>
       <br/>
-      <em>A HealthNetBC Username will typically have a format similar to: 12345-asmith</em>
+      <em>Example: 1234-asmith</em>
+    </p>
+    <p>
+      <b>Forgot your password?</b> <br/>
+      Before you start the account transfer process follow
+      <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">this link</a>
+      to reset your password
     </p>
 
     <form @submit.prevent="submitForm">
