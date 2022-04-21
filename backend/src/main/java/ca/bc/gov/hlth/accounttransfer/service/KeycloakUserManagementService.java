@@ -1,6 +1,5 @@
 package ca.bc.gov.hlth.accounttransfer.service;
 
-import ca.bc.gov.hlth.accounttransfer.applications.ClientsLookup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;

@@ -1,4 +1,4 @@
-package ca.bc.gov.hlth.accounttransfer.applications;
+package ca.bc.gov.hlth.accounttransfer.util.keycloak;
 
 import ca.bc.gov.hlth.accounttransfer.service.KeycloakUserManagementService;
 import org.slf4j.Logger;

@@ -1,4 +1,4 @@
-package ca.bc.gov.hlth.accounttransfer.model.rest.ldap;
+package ca.bc.gov.hlth.accounttransfer.model.ldap;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

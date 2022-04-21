@@ -1,4 +1,4 @@
-package ca.bc.gov.hlth.accounttransfer.applications;
+package ca.bc.gov.hlth.accounttransfer.util.keycloak;
 
 import java.util.HashMap;
 

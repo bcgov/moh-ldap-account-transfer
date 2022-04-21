@@ -1,4 +1,4 @@
-package ca.bc.gov.hlth.accounttransfer.model.rest.accountTransfer;
+package ca.bc.gov.hlth.accounttransfer.model.accountTransfer;
 
 public class AccountTransferRequest {
 
