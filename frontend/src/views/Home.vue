@@ -52,7 +52,10 @@ export default {
   },
   methods: {
     async submitForm() {
-      await this.v$.$validate()
+      const isValid = await this.v$.$validate()
+      if (!isValid) {
+        return
+      }
       this.submitting = true
 
       AccountTransferService.transferAccount({
