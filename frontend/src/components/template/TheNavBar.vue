@@ -5,9 +5,6 @@
         <li id="home-link" :class="tabClass($route, 'Home')">
           <router-link @click="resetAlert" :to="{ name: 'Home' }">Home</router-link>
         </li>
-        <li id="view-accounts-link" :class="tabClass($route, 'ViewAccount')">
-          <router-link @click="resetAlert" :to="{ name: 'ViewAccount' }">View Account</router-link>
-        </li>
       </ul>
     </div>
   </nav>
