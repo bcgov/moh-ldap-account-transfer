@@ -14,6 +14,7 @@ import App from './App.vue'
 import AppButton from './components/ui/AppButton.vue'
 import AppCol from './components/grid/AppCol.vue'
 import AppInput from './components/ui/AppInput.vue'
+import AppPasswordInput from "./components/ui/AppPasswordInput.vue";
 import AppOutput from './components/ui/AppOutput.vue'
 import AppRow from './components/grid/AppRow.vue'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
@@ -34,6 +35,7 @@ function initApp() {
     app.component('AppCol', AppCol)
     app.component('AppRow', AppRow)
     app.component('AppInput', AppInput)
+    app.component('AppPasswordInput', AppPasswordInput)
     app.component('AppOutput', AppOutput)
     app.component('AppButton', AppButton)
 
