@@ -1,5 +1,6 @@
-import { DEFAULT_ERROR_MESSAGE } from '../util/constants.js'
 import { defineStore } from 'pinia'
+
+import { DEFAULT_ERROR_MESSAGE } from '../util/constants.js'
 
 export const useAlertStore = defineStore('alert', {
   state: () => {
@@ -15,6 +16,11 @@ export const useAlertStore = defineStore('alert', {
     but use the chosen format to infer type
    */
   actions: {
+    setAlert(alert) {
+      this.message = alert.message
+      this.type = alert.type
+      this.active = true
+    },
     setErrorAlert(message) {
       this.message = message || DEFAULT_ERROR_MESSAGE
       this.type = 'error'
