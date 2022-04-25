@@ -9,6 +9,9 @@
             <div aria-label="This application is currently in Beta phase" class="Beta-PhaseBanner">Beta</div>
           </div>
         </section>
+        <section class="options user-select-off">
+          <a id="logoutLink" class="sign-out" v-on:click="logout">Sign Out</a>
+        </section>
       </section>
     </div>
   </header>
@@ -21,6 +24,15 @@ export default {
     return {
       title: config.APP_TITLE || import.meta.env.VITE_APP_TITLE,
     }
+  },
+  methods: {
+    logout() {
+      if (confirm('Please confirm you want to sign out. ' + '\nThis will also end all other active Keycloak or SiteMinder sessions you have open.')) {
+        this.$keycloak.logout({
+          redirectUri: location.origin + this.$router.resolve({ name: 'Home' }).path,
+        })
+      }
+    },
   },
 }
 </script>
@@ -55,6 +67,28 @@ header .container .identity .sitename {
   line-height: 59px;
   font-weight: bold;
   color: #ffffff;
+}
+
+header .container .options {
+  float: right;
+  height: 60px;
+  padding-top: 10px;
+}
+header .container .options .sign-out {
+  display: inline-block;
+  height: 40px;
+  padding: 0 20px;
+  border: 2px solid #ffffff;
+  border-radius: 4px;
+  text-decoration: none;
+  font-size: 1rem;
+  line-height: 2.25rem;
+  font-weight: bold;
+  color: #ffffff;
+  cursor: pointer;
+}
+header .container .options .sign-out:focus {
+  box-shadow: 0 0 3px #ffffff;
 }
 
 header .site-container {
