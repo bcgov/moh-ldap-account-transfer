@@ -82,6 +82,9 @@ footer ul li a {
   padding-right: 5px;
   text-decoration: none;
 }
+footer ul li:last-child a {
+  border-right: none;
+}
 
 a:hover {
   color: #fff;
