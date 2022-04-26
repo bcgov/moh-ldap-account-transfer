@@ -31,11 +31,8 @@ public class AccountsController {
 	private static final Logger logger = LoggerFactory.getLogger(AccountsController.class);
 
 	private static final String MSPDIRECT = "MSPDIRECT-SERVICE";
-	private static final String subClaim = "sub";
+	private static final String SUB_CLAIM = "sub";
 
-	public AccountsController() {
-
-	}
 	@Autowired
 	private ClientsLookup clientsLookup;
 
@@ -45,9 +42,13 @@ public class AccountsController {
 	@Autowired
 	private KeycloakUserManagementService keycloakUserManagementService;
 
+	public AccountsController() {
+
+	}
 	
 	/**
-	 * Sample post endpoint for the application 
+	 * Accepts an account transfer request and, if the credentials are valid, transfers the specified application roles
+	 * from ldap to Keycloak
 	 *  
 	 * @param accountTransferRequest account transfer request
 	 * @return The result of the operation
@@ -56,7 +57,7 @@ public class AccountsController {
 	public ResponseEntity<AccountTransferResponse> transferAccount(@Valid @RequestBody AccountTransferRequest accountTransferRequest) {
 
 		Jwt authToken = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-		String userId = authToken.getClaimAsString(subClaim);
+		String userId = authToken.getClaimAsString(SUB_CLAIM);
 
 		logger.debug("Attempting account transfer for User {} on Application {}", accountTransferRequest.getUsername(), accountTransferRequest.getApplication());
 
@@ -69,10 +70,11 @@ public class AccountsController {
 		// TODO if ldapResponse.mspDirectRole = '' -> error user doesn't actually have the role
 		// TODO if ldapResponse.mspDirectRole is not supported in the new MSP Direct -> role is invalid
 
-		logger.debug("User has role {}", ldapResponse.getMspDirectRole().toUpperCase());
 		// Authentication success, account unlocked, user has a role for the mspdirect
 		// Add the role to the user in Keycloak
 		if (accountTransferRequest.getApplication().equals(MSPDIRECT) && !ldapResponse.getMspDirectRole().equals("")) {
+
+			logger.debug("User has role {}", ldapResponse.getMspDirectRole().toUpperCase());
 
 			String idOfClient = clientsLookup.getClients().get(MSPDIRECT).getId();
 			// TODO VISARESIDENT role with return null here because it's now called VISARESIDENTS
@@ -82,12 +84,13 @@ public class AccountsController {
 
 			keycloakUserManagementService.addRoleToUser(userId, idOfClient, rolesToSend);
 
-			String responseMessage = "Account transfer succeeded for user " + accountTransferRequest.getUsername() + " for the application " + MSPDIRECT + " with the role " + ldapResponse.getMspDirectRole();
+			String responseMessage = "Account transfer succeeded for user " + accountTransferRequest.getUsername() + " for the application " + MSPDIRECT + " with the role " + ldapResponse.getMspDirectRole().toUpperCase();
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS, responseMessage, ldapResponse.getMspDirectRole().toUpperCase());
 
 			return ResponseEntity.ok(response);
 		}
 
+		// TODO Once error handling is in place we should always return something specific
 		return null;
 
 	}

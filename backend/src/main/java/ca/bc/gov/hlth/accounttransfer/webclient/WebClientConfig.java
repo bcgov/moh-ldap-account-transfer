@@ -59,11 +59,11 @@ public class WebClientConfig {
     @Bean("userManagementWebClient")
     public WebClient userManagementWebClient(OAuth2AuthorizedClientManager authorizedClientManager) {
 
-        String registrationId = "keycloak";
+        final String oauthRegistrationId = "keycloak";
 
         ServletOAuth2AuthorizedClientExchangeFilterFunction oauth =
                 new ServletOAuth2AuthorizedClientExchangeFilterFunction(authorizedClientManager);
-        oauth.setDefaultClientRegistrationId(registrationId);
+        oauth.setDefaultClientRegistrationId(oauthRegistrationId);
 
         return WebClient.builder()
                 .baseUrl(userManagementApiUrl)

@@ -1,11 +1,11 @@
 <template>
   <section>
-    <h1>Welcome to the MSP Direct Account Transfer </h1>
+    <h1>Welcome to the MSP Direct Account Transfer</h1>
     <p>
       To transfer your MSP Direct permissions to your new account you will need to enter your HealthNetBC Username and Password.
     </p>
     <p>
-      <b>Your HealthNetBC UserName</b> <br/>
+      <b>Your HealthNetBC Username</b> <br/>
       A HealthNetBC Username will typically have the format: <b>Org ID-FirstInitial, Last Name</b>
       <br/>
       <em>Example: 1234-asmith</em>
@@ -67,23 +67,18 @@ export default {
       }
       this.submitting = true
 
-      AccountTransferService.transferAccount({
-        username: this.username,
-        password: this.password,
-        application: 'MSPDIRECT-SERVICE'
-      }).then(response => {
-        let responseBody = response.data
-
-        if (responseBody.status === 'success') {
-          this.alert.setSuccessAlert(responseBody.message)
-        } else if (responseBody.status === 'error') {
-          this.alert.setErrorAlert(responseBody.message)
-        }
-      }).catch(error => {
-        this.alert.setErrorAlert(`${error}`)
-      }).finally(() => {
-            this.submitting = false
-      })
+      try {
+        let responseBody = (await AccountTransferService.transferAccount({
+          username: this.username,
+          password: this.password,
+          application: 'MSPDIRECT-SERVICE'
+        })).data
+        this.alert.setAlert({ message: responseBody.message, type: responseBody.status})
+      } catch (error) {
+        this.alert.setErrorAlert(error)
+      } finally {
+        this.submitting = false
+      }
     }
   },
   validations() {

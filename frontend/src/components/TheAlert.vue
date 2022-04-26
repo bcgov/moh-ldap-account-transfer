@@ -60,7 +60,6 @@ export default {
   width: 150px;
 }
 .alert-message {
-  align-items: left;
   flex: 1;
   justify-content: flex-start;
   vertical-align: middle;

@@ -7,8 +7,7 @@ public class LdapResponse {
     private boolean authenticated;
     private boolean unlocked;
 
-    @JsonProperty("userName")
-    private String username;
+    private String userName;
 
     @JsonProperty("hlthregbusinessusergroup")
     private String mspDirectRole;
@@ -18,11 +17,11 @@ public class LdapResponse {
 
 
     public String getUsername() {
-        return username;
+        return userName;
     }
 
     public void setUsername(String username) {
-        this.username = username;
+        this.userName = username;
     }
 
     public boolean getAuthenticated() {
@@ -60,7 +59,7 @@ public class LdapResponse {
     @Override
     public String toString() {
         return "LdapResponse{" +
-                "username='" + username + '\'' +
+                "username='" + userName + '\'' +
                 ", authenticated='" + authenticated + '\'' +
                 ", unlocked='" + unlocked + '\'' +
                 ", hlthregbusinessusergroup='" + mspDirectRole + '\'' +
