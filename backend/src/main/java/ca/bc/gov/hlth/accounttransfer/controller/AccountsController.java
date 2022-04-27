@@ -2,12 +2,7 @@ package ca.bc.gov.hlth.accounttransfer.controller;
 
 import javax.validation.Valid;
 
-import ca.bc.gov.hlth.accounttransfer.model.accountTransfer.AccountTransferResponse;
-import ca.bc.gov.hlth.accounttransfer.model.accountTransfer.StatusEnum;
-import ca.bc.gov.hlth.accounttransfer.util.keycloak.ClientsLookup;
-import ca.bc.gov.hlth.accounttransfer.model.ldap.LdapRequest;
-import ca.bc.gov.hlth.accounttransfer.model.ldap.LdapResponse;
-import ca.bc.gov.hlth.accounttransfer.service.KeycloakUserManagementService;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +14,13 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import ca.bc.gov.hlth.accounttransfer.model.accountTransfer.AccountTransferRequest;
+import ca.bc.gov.hlth.accounttransfer.model.accountTransfer.AccountTransferResponse;
+import ca.bc.gov.hlth.accounttransfer.model.accountTransfer.StatusEnum;
+import ca.bc.gov.hlth.accounttransfer.model.ldap.LdapRequest;
+import ca.bc.gov.hlth.accounttransfer.model.ldap.LdapResponse;
+import ca.bc.gov.hlth.accounttransfer.service.KeycloakUserManagementService;
 import ca.bc.gov.hlth.accounttransfer.service.LdapService;
+import ca.bc.gov.hlth.accounttransfer.util.keycloak.ClientsLookup;
 
 /**
  * Handle requests related to Account Transfers.
@@ -72,7 +73,7 @@ public class AccountsController {
 
 		// Authentication success, account unlocked, user has a role for the mspdirect
 		// Add the role to the user in Keycloak
-		if (accountTransferRequest.getApplication().equals(MSPDIRECT) && !ldapResponse.getMspDirectRole().equals("")) {
+		if (accountTransferRequest.getApplication().equals(MSPDIRECT) && StringUtils.isNotEmpty(ldapResponse.getMspDirectRole())) {
 
 			logger.debug("User has role {}", ldapResponse.getMspDirectRole().toUpperCase());
 
@@ -84,7 +85,7 @@ public class AccountsController {
 
 			keycloakUserManagementService.addRoleToUser(userId, idOfClient, rolesToSend);
 
-			String responseMessage = "Account transfer succeeded for user " + accountTransferRequest.getUsername() + " for the application " + MSPDIRECT + " with the role " + ldapResponse.getMspDirectRole().toUpperCase();
+			String responseMessage = "Account transfer successful for user " + accountTransferRequest.getUsername() + " for the application " + MSPDIRECT + " with the role " + ldapResponse.getMspDirectRole().toUpperCase();
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS, responseMessage, ldapResponse.getMspDirectRole().toUpperCase());
 
 			return ResponseEntity.ok(response);
@@ -92,7 +93,6 @@ public class AccountsController {
 
 		// TODO Once error handling is in place we should always return something specific
 		return null;
-
 	}
 
 }

@@ -74,6 +74,11 @@ export default {
   cursor: not-allowed;
 }
 
+:slotted(a) {
+  color: white;
+  text-decoration: none;
+}
+
 .BC-Gov-SecondaryButton {
   background: none;
   border-radius: 4px;
