@@ -11,6 +11,10 @@ public class AccountTransferResponse {
         this.message = message;
         this.roleAdded = roleAdded;
     }
+    
+    public AccountTransferResponse(StatusEnum status, String message) {
+        this(status, message, null);
+    }
 
     public StatusEnum getStatus() {
         return status;

@@ -1,6 +1,14 @@
 <template>
   <section>
     <h1>Welcome to the MSP Direct Account Transfer</h1>
+    <div id="error" v-if="systemError">
+      <p>
+        There was an error with your transfer request.<br />
+        Please contact MSP Direct Helpdesk at:<br />
+        Phone: 555-555-1234<br />
+        Email: support@mspdirect
+      </p>
+    </div>
     <p>To transfer your MSP Direct permissions to your new account you will need to enter your HealthNetBC Username and Password.</p>
     <p>
       <b>Your HealthNetBC Username</b> <br />
@@ -40,12 +48,13 @@ import useVuelidate from '@vuelidate/core'
 import { useAlertStore } from '../stores/alert'
 import { required } from '@vuelidate/validators'
 import AccountTransferService from '../services/AccountTransferService'
+import { ref } from 'vue'
 
 export default {
   name: 'home',
   setup() {
     return {
-      alert: useAlertStore(),
+      alertStore: useAlertStore(),
       v$: useVuelidate(),
     }
   },
@@ -55,12 +64,15 @@ export default {
       password: '',
       submitting: false,
       passwordVisible: false,
+      systemError: false,
     }
   },
   methods: {
     async submitForm() {
+      this.alertStore.dismissAlert()
       const isValid = await this.v$.$validate()
       if (!isValid) {
+        this.alertStore.setErrorAlert()
         return
       }
       this.submitting = true
@@ -73,13 +85,22 @@ export default {
             application: 'MSPDIRECT-SERVICE',
           })
         ).data
-        this.alert.setAlert({ message: responseBody.message, type: responseBody.status })
+        this.alertStore.setAlert({ message: responseBody.message, type: responseBody.status })
+        // Display additional information on error
+        if (responseBody.status == 'error') {
+          this.systemError = true
+          this.username = ''
+          this.password = ''
+          this.v$.$reset()
+        }
         // Navigate to the Confirmation page on success
         if (responseBody.status == 'success') {
+          this.systemError = false
           this.$router.push({ name: 'Confirmation' })
         }
       } catch (error) {
-        this.alert.setErrorAlert(error)
+        this.alertStore.setErrorAlert(error)
+        this.systemError = true
       } finally {
         this.submitting = false
       }
@@ -97,3 +118,13 @@ export default {
   },
 }
 </script>
+<style scoped>
+#error {
+  background-color: #f2dede;
+  color: #a12622;
+  border: 2px solid #ebccd1;
+  border-radius: 4px;
+  margin: 5px 0 5px 0;
+  padding: 5px;
+}
+</style>

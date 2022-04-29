@@ -6,6 +6,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -33,7 +34,11 @@ public class AccountsController {
 
 	private static final String MSPDIRECT = "MSPDIRECT-SERVICE";
 	private static final String SUB_CLAIM = "sub";
-
+	
+	private static final String ERROR_INVALID_USER_PASS = "Invalid Username or Password";
+	private static final String ERROR_ACCOUNT_LOCKED = "Account is locked";
+	private static final String ERROR_NO_ROLE = "User has no role";
+	
 	@Autowired
 	private ClientsLookup clientsLookup;
 
@@ -65,33 +70,67 @@ public class AccountsController {
 		LdapRequest ldapRequest = new LdapRequest(accountTransferRequest.getUsername(), accountTransferRequest.getPassword());
 		LdapResponse ldapResponse = ldapService.checkLdapAccount(ldapRequest);
 
-		// TODO if ldapResponse.username == '' -> error username doesn't exist
-		// TODO if ldapResponse.authenticated == false -> error user is locked
-		// TODO if ldapResponse.locked == true -> error account is locked
-		// TODO if ldapResponse.mspDirectRole = '' -> error user doesn't actually have the role
-		// TODO if ldapResponse.mspDirectRole is not supported in the new MSP Direct -> role is invalid
-
+		String errorMessage = validateLdapResponse(ldapResponse);
+		if (StringUtils.isNotBlank(errorMessage)) {
+			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, errorMessage);
+			return ResponseEntity.ok(response);			
+		}		
+		
 		// Authentication success, account unlocked, user has a role for the mspdirect
 		// Add the role to the user in Keycloak
-		if (accountTransferRequest.getApplication().equals(MSPDIRECT) && StringUtils.isNotEmpty(ldapResponse.getMspDirectRole())) {
+		if (StringUtils.equals(accountTransferRequest.getApplication(), MSPDIRECT)) {
 
 			logger.debug("User has role {}", ldapResponse.getMspDirectRole().toUpperCase());
 
 			String idOfClient = clientsLookup.getClients().get(MSPDIRECT).getId();
 			// TODO VISARESIDENT role with return null here because it's now called VISARESIDENTS
 			Object roleRepresentation = clientsLookup.getClients().get(MSPDIRECT).getRoles().get(ldapResponse.getMspDirectRole().toUpperCase());
+			
+			// If ldapResponse.mspDirectRole is not supported in the new MSP Direct -> role is invalid
+			if (roleRepresentation == null) {
+				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String.format("%s is not a valid %s role", ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
+				return ResponseEntity.ok(response);		
+			}
+			
 			// Keycloak expects the representation of roles to add in an array
 			Object[] rolesToSend = { roleRepresentation };
 
-			keycloakUserManagementService.addRoleToUser(userId, idOfClient, rolesToSend);
+			ResponseEntity<String> kcResponse = keycloakUserManagementService.addRoleToUser(userId, idOfClient, rolesToSend);
+			if (kcResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
+				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String.format("Error transferring role %s for application %s", ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
+				return ResponseEntity.ok(response);
+			}
 
-			String responseMessage = "Account transfer successful for user " + accountTransferRequest.getUsername() + " for the application " + MSPDIRECT + " with the role " + ldapResponse.getMspDirectRole().toUpperCase();
+			String responseMessage = String.format("Account transfer successful for user %s for the application %s with the role %s", accountTransferRequest.getUsername(), MSPDIRECT, ldapResponse.getMspDirectRole().toUpperCase());
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS, responseMessage, ldapResponse.getMspDirectRole().toUpperCase());
 
 			return ResponseEntity.ok(response);
 		}
 
-		// TODO Once error handling is in place we should always return something specific
+		// Unknown application. Only MSPDIRECT is currently supported
+		AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String.format("Account transfer for %s is not supported", accountTransferRequest.getApplication()));
+		return ResponseEntity.ok(response);
+	}
+	
+	private String validateLdapResponse(LdapResponse ldapResponse) {
+		// If ldapResponse.username == '' -> error username doesn't exist
+		if (StringUtils.isEmpty(ldapResponse.getUsername())) {
+			return ERROR_INVALID_USER_PASS;
+		}
+		// If ldapResponse.authenticated == false -> error user put in the wrong password
+		if (!ldapResponse.getAuthenticated()) {
+			if (ldapResponse.getUnlocked()) {
+				return ERROR_INVALID_USER_PASS;
+			} else {
+				// If ldapResponse.locked == true -> error account is locked
+				return ERROR_ACCOUNT_LOCKED;
+			}
+		}
+		// If ldapResponse.mspDirectRole = '' -> error user doesn't actually have the role
+		if (StringUtils.isBlank(ldapResponse.getMspDirectRole())) {
+			return ERROR_NO_ROLE;
+		}
+		
 		return null;
 	}
 
