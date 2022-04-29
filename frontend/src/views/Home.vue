@@ -1,17 +1,15 @@
 <template>
   <section>
     <h1>Welcome to the MSP Direct Account Transfer</h1>
+    <p>To transfer your MSP Direct permissions to your new account you will need to enter your HealthNetBC Username and Password.</p>
     <p>
-      To transfer your MSP Direct permissions to your new account you will need to enter your HealthNetBC Username and Password.
-    </p>
-    <p>
-      <b>Your HealthNetBC Username</b> <br/>
+      <b>Your HealthNetBC Username</b> <br />
       A HealthNetBC Username will typically have the format: <b>Org ID-FirstInitial, Last Name</b>
-      <br/>
+      <br />
       <em>Example: 1234-asmith</em>
     </p>
     <p>
-      <b>Forgot your password?</b> <br/>
+      <b>Forgot your password?</b> <br />
       Before you start the account transfer process follow
       <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">this link</a>
       to reset your password
@@ -48,7 +46,7 @@ export default {
   setup() {
     return {
       alert: useAlertStore(),
-      v$: useVuelidate()
+      v$: useVuelidate(),
     }
   },
   data() {
@@ -68,28 +66,34 @@ export default {
       this.submitting = true
 
       try {
-        let responseBody = (await AccountTransferService.transferAccount({
-          username: this.username,
-          password: this.password,
-          application: 'MSPDIRECT-SERVICE'
-        })).data
-        this.alert.setAlert({ message: responseBody.message, type: responseBody.status})
+        let responseBody = (
+          await AccountTransferService.transferAccount({
+            username: this.username,
+            password: this.password,
+            application: 'MSPDIRECT-SERVICE',
+          })
+        ).data
+        this.alert.setAlert({ message: responseBody.message, type: responseBody.status })
+        // Navigate to the Confirmation page on success
+        if (responseBody.status == 'success') {
+          this.$router.push({ name: 'Confirmation' })
+        }
       } catch (error) {
         this.alert.setErrorAlert(error)
       } finally {
         this.submitting = false
       }
-    }
+    },
   },
   validations() {
     return {
       username: {
-        required
+        required,
       },
       password: {
-        required
+        required,
       },
     }
-  }
+  },
 }
 </script>
