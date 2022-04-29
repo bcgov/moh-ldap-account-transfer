@@ -1,14 +1,6 @@
 <template>
   <section>
     <h1>Welcome to the MSP Direct Account Transfer</h1>
-    <div id="error-help" v-if="systemError">
-      <p>
-        There was an error with your transfer request.<br />
-        Please contact MSP Direct Helpdesk at:<br />
-        Phone: 555-555-1234<br />
-        Email: support@mspdirect
-      </p>
-    </div>
     <p>To transfer your MSP Direct permissions to your new account you will need to enter your HealthNetBC Username and Password.</p>
     <p>
       <b>Your HealthNetBC Username</b> <br />
@@ -22,7 +14,9 @@
       <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">this link</a>
       to reset your password
     </p>
-
+    <Transition>
+      <AppError :visible="displayError" :message="errorMessage" :additionalInfo="additionalInfo" @close="handleClose()" />
+    </Transition>
     <form @submit.prevent="submitForm">
       <AppRow>
         <AppCol class="col3">
@@ -47,11 +41,12 @@
 import useVuelidate from '@vuelidate/core'
 import { useAlertStore } from '../stores/alert'
 import { required } from '@vuelidate/validators'
+import AppError from '../components/ui/AppError.vue'
 import AccountTransferService from '../services/AccountTransferService'
-import { ref } from 'vue'
 
 export default {
   name: 'home',
+  components: { AppError },
   setup() {
     return {
       alertStore: useAlertStore(),
@@ -65,18 +60,20 @@ export default {
       submitting: false,
       passwordVisible: false,
       systemError: false,
+      displayError: false,
+      errorMessage: '',
+      additionalInfo: '',
     }
   },
   methods: {
     async submitForm() {
-      this.alertStore.dismissAlert()
+      this.displayError = false
       const isValid = await this.v$.$validate()
       if (!isValid) {
-        this.alertStore.setErrorAlert()
+        this.showError()
         return
       }
       this.submitting = true
-
       try {
         let responseBody = (
           await AccountTransferService.transferAccount({
@@ -85,28 +82,39 @@ export default {
             application: 'MSPDIRECT-SERVICE',
           })
         ).data
-        this.alertStore.setAlert({ message: responseBody.message, type: responseBody.status })
         // Display additional information on error
         if (responseBody.status == 'error') {
-          this.handleError()
+          const errorMessage = responseBody.message
+          let additionalInfo = ''
+          if (errorMessage.startsWith('Invalid Username')) {
+            additionalInfo = 'If you forgot your password please try the following link: TODO.<br/>If you are still having trouble please contact the helpdesk at 555-555-1234 or support@mspdirect.'
+          } else {
+            additionalInfo = 'If you believe you are seeing this message in error please contact the helpdesk at 555-555-1234 or support@mspdirect.'
+          }
+          this.showError(errorMessage, additionalInfo)
+          // The Username/Password have been cleared but we don't want to trigger immediate validation
+          this.v$.$reset()
         }
         // Navigate to the Confirmation page on success
         if (responseBody.status == 'success') {
-          this.systemError = false
+          this.alertStore.setSuccessAlert(responseBody.message)
           this.$router.push({ name: 'Confirmation' })
         }
       } catch (error) {
-        this.alertStore.setErrorAlert(error)
-        this.handleError()
+        this.showError()
       } finally {
         this.submitting = false
       }
     },
-    handleError() {
-      this.systemError = true
+    handleClose() {
+      this.displayError = false
+    },
+    showError(error, additionalInfo) {
+      this.displayError = true
+      this.errorMessage = error
+      this.additionalInfo = additionalInfo
       this.username = ''
       this.password = ''
-      this.v$.$reset()
     },
   },
   validations() {
@@ -121,18 +129,15 @@ export default {
   },
 }
 </script>
+
 <style scoped>
-#error-help {
-  background-color: #f2dede;
-  color: #a12622;
-  border: 2px solid #ebccd1;
-  border-radius: 4px;
-  margin: 5px 0 5px 0;
-  padding: 5px;
-  /* background-color: #eeeeee;
-  border: 2px solid #38598a;
-  border-radius: 4px;
-  margin: 5px 0 5px 0;
-  padding: 5px; */
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
 }
 </style>
