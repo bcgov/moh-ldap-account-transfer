@@ -1,7 +1,7 @@
 <template>
   <section>
     <h1>Welcome to the MSP Direct Account Transfer</h1>
-    <div id="error" v-if="systemError">
+    <div id="error-help" v-if="systemError">
       <p>
         There was an error with your transfer request.<br />
         Please contact MSP Direct Helpdesk at:<br />
@@ -88,10 +88,7 @@ export default {
         this.alertStore.setAlert({ message: responseBody.message, type: responseBody.status })
         // Display additional information on error
         if (responseBody.status == 'error') {
-          this.systemError = true
-          this.username = ''
-          this.password = ''
-          this.v$.$reset()
+          this.handleError()
         }
         // Navigate to the Confirmation page on success
         if (responseBody.status == 'success') {
@@ -100,10 +97,16 @@ export default {
         }
       } catch (error) {
         this.alertStore.setErrorAlert(error)
-        this.systemError = true
+        this.handleError()
       } finally {
         this.submitting = false
       }
+    },
+    handleError() {
+      this.systemError = true
+      this.username = ''
+      this.password = ''
+      this.v$.$reset()
     },
   },
   validations() {
@@ -119,12 +122,17 @@ export default {
 }
 </script>
 <style scoped>
-#error {
+#error-help {
   background-color: #f2dede;
   color: #a12622;
   border: 2px solid #ebccd1;
   border-radius: 4px;
   margin: 5px 0 5px 0;
   padding: 5px;
+  /* background-color: #eeeeee;
+  border: 2px solid #38598a;
+  border-radius: 4px;
+  margin: 5px 0 5px 0;
+  padding: 5px; */
 }
 </style>
