@@ -15,7 +15,7 @@
       to reset your password
     </p>
     <Transition>
-      <AppError :visible="displayError" :message="errorMessage" :additionalInfo="additionalInfo" @close="handleClose()" />
+      <AppErrorPanel :visible="displayError" :message="errorMessage" :additionalInfo="additionalInfo" @close="handleClose()" />
     </Transition>
     <form @submit.prevent="submitForm">
       <AppRow>
@@ -41,12 +41,12 @@
 import useVuelidate from '@vuelidate/core'
 import { useAlertStore } from '../stores/alert'
 import { required } from '@vuelidate/validators'
-import AppError from '../components/ui/AppError.vue'
+import AppErrorPanel from '../components/ui/AppErrorPanel.vue'
 import AccountTransferService from '../services/AccountTransferService'
 
 export default {
   name: 'home',
-  components: { AppError },
+  components: { AppErrorPanel },
   setup() {
     return {
       alertStore: useAlertStore(),
@@ -59,7 +59,6 @@ export default {
       password: '',
       submitting: false,
       passwordVisible: false,
-      systemError: false,
       displayError: false,
       errorMessage: '',
       additionalInfo: '',
@@ -87,9 +86,9 @@ export default {
           const errorMessage = responseBody.message
           let additionalInfo = ''
           if (errorMessage.startsWith('Invalid Username')) {
-            additionalInfo = 'If you forgot your password please try the following link: TODO.<br/>If you are still having trouble please contact the helpdesk at 555-555-1234 or support@mspdirect.'
+            additionalInfo = 'If you forgot your password please try the following link: <span class="fix-me">XXXX.</span><br/>If you are still having trouble please contact the helpdesk at <span class="fix-me">555-555-1234</span> or <span class="fix-me">support@mspdirect.</span>'
           } else {
-            additionalInfo = 'If you believe you are seeing this message in error please contact the helpdesk at 555-555-1234 or support@mspdirect.'
+            additionalInfo = 'If you believe you are seeing this message in error please contact the helpdesk at <span class="fix-me">XXX-XXX-XXXX</span> or <span class="fix-me">support@mspdirect</span>.'
           }
           this.showError(errorMessage, additionalInfo)
           // The Username/Password have been cleared but we don't want to trigger immediate validation

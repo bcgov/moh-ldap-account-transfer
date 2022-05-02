@@ -7,6 +7,7 @@ const ERROR_MESSAGE = 'Please correct errors before submitting'
 const USERNAME_REQUIRED = 'Username is required'
 const PASSWORD_REQUIRED = 'Password is required'
 const INVALID_USER_PASS = 'Invalid Username or Password'
+const ERROR_HELP_TEXT = 'If you forgot your password please try the following link:'
 
 fixture(`Home Page`).disablePageCaching`Test Home Page`
   .beforeEach(async (t) => {
@@ -23,9 +24,16 @@ test('Check heading exists on Home page! ', async (t) => {
 })
 
 test('Check required fields validation', async (t) => {
-  await t.click(HomePage.submitButton).expect(HomePage.errorText.nth(0).textContent).eql(USERNAME_REQUIRED).expect(HomePage.errorText.nth(1).textContent).eql(PASSWORD_REQUIRED)
+  await t.click(HomePage.submitButton).expect(HomePage.errorPanel.textContent).eql(ERROR_MESSAGE).expect(HomePage.errorText.nth(0).textContent).eql(USERNAME_REQUIRED).expect(HomePage.errorText.nth(1).textContent).eql(PASSWORD_REQUIRED)
 })
 
 test('Check server validation', async (t) => {
-  await t.typeText(HomePage.usernameInput, 'abc').typeText(HomePage.passwordInput, '123').click(HomePage.submitButton).expect(AlertPage.alertBannerText.textContent).eql(INVALID_USER_PASS).expect(HomePage.errorHelp.textContent).contains('There was an error with your transfer request.')
+  await t
+    .typeText(HomePage.usernameInput, 'abc')
+    .typeText(HomePage.passwordInput, '123')
+    .click(HomePage.submitButton)
+    .expect(HomePage.errorPanel.textContent)
+    .contains(INVALID_USER_PASS) //
+    .expect(HomePage.errorPanel.textContent)
+    .contains(ERROR_HELP_TEXT)
 })

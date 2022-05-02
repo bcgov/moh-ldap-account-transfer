@@ -1,13 +1,13 @@
 <template>
-  <div class="alert-container bc-gov-alertbanner bc-gov-alertbanner-error" v-if="visible">
-    <div class="alert-icon">
+  <div class="error-container bc-gov-alertbanner bc-gov-alertbanner-error" v-if="visible">
+    <div class="error-icon">
       <font-awesome-icon icon="exclamation-circle"></font-awesome-icon>
     </div>
-    <div class="alert-message">
-      <p>{{ message || DEFAULT_ERROR_MESSAGE }}</p>
+    <div class="error-message">
+      <p>{{ message }}</p>
       <p class="error-additional-info" v-html="additionalInfo" />
     </div>
-    <div class="alert-close">
+    <div class="error-close">
       <a @click="$emit('close')">
         <font-awesome-icon icon="times" />
       </a>
@@ -19,7 +19,7 @@
 import { DEFAULT_ERROR_MESSAGE } from '../../util/constants.js'
 
 export default {
-  name: 'AppError',
+  name: 'AppErrorPanel',
   data() {
     return {}
   },
@@ -38,27 +38,25 @@ export default {
     },
   },
   emits: ['close'],
-  methods: {
-    close() {
-      this.$emit('close')
-    },
-  },
 }
 </script>
 
 <style scoped>
-.alert-container {
+:global(.fix-me) {
+  background-color: yellow !important;
+}
+.error-container {
   align-items: center;
   display: flex;
 }
 
-.alert-icon {
+.error-icon {
   display: flex;
   flex: 0;
   justify-content: flex-start;
   width: 150px;
 }
-.alert-message {
+.error-message {
   flex: 1;
   justify-content: flex-start;
   vertical-align: middle;
@@ -69,13 +67,13 @@ export default {
   font-weight: normal;
 }
 
-.alert-close {
+.error-close {
   display: flex;
   flex: 0;
   justify-content: flex-end;
   width: 150px;
 }
-.alert-close a {
+.error-close a {
   cursor: pointer;
 }
 
