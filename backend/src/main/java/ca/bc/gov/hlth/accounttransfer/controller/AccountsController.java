@@ -114,7 +114,7 @@ public class AccountsController {
 	
 	private String validateLdapResponse(LdapResponse ldapResponse) {
 		// If ldapResponse.username == '' -> error username doesn't exist
-		if (StringUtils.isEmpty(ldapResponse.getUsername())) {
+		if (StringUtils.isEmpty(ldapResponse.getUserName())) {
 			return ERROR_INVALID_USER_PASS;
 		}
 		// If ldapResponse.authenticated == false -> error user put in the wrong password

@@ -82,7 +82,7 @@ export default {
           })
         ).data
         // Display additional information on error
-        if (responseBody.status == 'error') {
+        if (responseBody.status === 'error') {
           const errorMessage = responseBody.message
           let additionalInfo = ''
           if (errorMessage.startsWith('Invalid Username')) {
