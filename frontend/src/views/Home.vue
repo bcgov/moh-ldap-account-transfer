@@ -91,8 +91,7 @@ export default {
             additionalInfo = 'If you believe you are seeing this message in error please contact the helpdesk at <span class="fix-me">XXX-XXX-XXXX</span> or <span class="fix-me">support@mspdirect</span>.'
           }
           this.showError(errorMessage, additionalInfo)
-          // The Username/Password have been cleared but we don't want to trigger immediate validation
-          this.v$.$reset()
+          this.clearUserPass()
         }
         // Navigate to the Confirmation page on success
         if (responseBody.status == 'success') {
@@ -100,7 +99,8 @@ export default {
           this.$router.push({ name: 'Confirmation' })
         }
       } catch (error) {
-        this.showError()
+        this.showError(error)
+        this.clearUserPass()
       } finally {
         this.submitting = false
       }
@@ -112,8 +112,12 @@ export default {
       this.displayError = true
       this.errorMessage = error
       this.additionalInfo = additionalInfo
+    },
+    clearUserPass() {
       this.username = ''
       this.password = ''
+      // The Username/Password have been cleared but we don't want to trigger immediate validation
+      this.v$.$reset()
     },
   },
   validations() {
