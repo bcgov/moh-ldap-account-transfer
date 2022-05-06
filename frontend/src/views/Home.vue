@@ -14,7 +14,9 @@
       <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">this link</a>
       to reset your password
     </p>
-
+    <Transition>
+      <AppErrorPanel :visible="displayError" :message="errorMessage" :additionalInfo="additionalInfo" @close="handleClose()" />
+    </Transition>
     <form @submit.prevent="submitForm">
       <AppRow>
         <AppCol class="col3">
@@ -39,13 +41,15 @@
 import useVuelidate from '@vuelidate/core'
 import { useAlertStore } from '../stores/alert'
 import { required } from '@vuelidate/validators'
+import AppErrorPanel from '../components/ui/AppErrorPanel.vue'
 import AccountTransferService from '../services/AccountTransferService'
 
 export default {
   name: 'home',
+  components: { AppErrorPanel },
   setup() {
     return {
-      alert: useAlertStore(),
+      alertStore: useAlertStore(),
       v$: useVuelidate(),
     }
   },
@@ -55,16 +59,20 @@ export default {
       password: '',
       submitting: false,
       passwordVisible: false,
+      displayError: false,
+      errorMessage: '',
+      additionalInfo: '',
     }
   },
   methods: {
     async submitForm() {
+      this.displayError = false
       const isValid = await this.v$.$validate()
       if (!isValid) {
+        this.showError()
         return
       }
       this.submitting = true
-
       try {
         let responseBody = (
           await AccountTransferService.transferAccount({
@@ -73,16 +81,43 @@ export default {
             application: 'MSPDIRECT-SERVICE',
           })
         ).data
-        this.alert.setAlert({ message: responseBody.message, type: responseBody.status })
+        // Display additional information on error
+        if (responseBody.status === 'error') {
+          const errorMessage = responseBody.message
+          let additionalInfo = ''
+          if (errorMessage.startsWith('Invalid Username')) {
+            additionalInfo = 'If you forgot your password please try the following link: <span class="fix-me">XXXX.</span><br/>If you are still having trouble please contact the helpdesk at <span class="fix-me">555-555-1234</span> or <span class="fix-me">support@mspdirect.</span>'
+          } else {
+            additionalInfo = 'If you believe you are seeing this message in error please contact the helpdesk at <span class="fix-me">XXX-XXX-XXXX</span> or <span class="fix-me">support@mspdirect</span>.'
+          }
+          this.showError(errorMessage, additionalInfo)
+          this.clearUserPass()
+        }
         // Navigate to the Confirmation page on success
         if (responseBody.status == 'success') {
+          this.alertStore.setSuccessAlert(responseBody.message)
           this.$router.push({ name: 'Confirmation' })
         }
       } catch (error) {
-        this.alert.setErrorAlert(error)
+        this.showError(error)
+        this.clearUserPass()
       } finally {
         this.submitting = false
       }
+    },
+    handleClose() {
+      this.displayError = false
+    },
+    showError(error, additionalInfo) {
+      this.displayError = true
+      this.errorMessage = error
+      this.additionalInfo = additionalInfo
+    },
+    clearUserPass() {
+      this.username = ''
+      this.password = ''
+      // The Username/Password have been cleared but we don't want to trigger immediate validation
+      this.v$.$reset()
     },
   },
   validations() {
@@ -97,3 +132,15 @@ export default {
   },
 }
 </script>
+
+<style scoped>
+.v-enter-active,
+.v-leave-active {
+  transition: opacity 0.5s ease;
+}
+
+.v-enter-from,
+.v-leave-to {
+  opacity: 0;
+}
+</style>
