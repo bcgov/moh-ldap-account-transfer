@@ -126,7 +126,7 @@ public class AccountsController {
 			sb.append(String.format("Account transfer successful for user %s for the application %s with the role %s",
 					accountTransferRequest.getUsername(), MSPDIRECT, ldapResponse.getMspDirectRole().toUpperCase()));
 			if (Boolean.TRUE.equals(transferError)) {
-				sb.append("\n Note: Organization transfer failed. Please contact support to have your organization set up manually.");
+				sb.append("\nNote: Organization transfer failed. Please contact support to have your organization set up manually.");
 			}
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS, sb.toString(),
 					ldapResponse.getMspDirectRole().toUpperCase());
@@ -146,29 +146,24 @@ public class AccountsController {
 	 * @param ldapOrg The organization in LDAP.
 	 * @throws AccountTransferException 
 	 */
-	@SuppressWarnings("unchecked")
 	private void transferOrganization(String userId, OrgDetails ldapOrg) throws AccountTransferException {
 		// Look up the user in Keycloak/UMS
-		ResponseEntity<User> response = keycloakUserManagementService.getUser(userId);
-		if (response.getStatusCode() != HttpStatus.OK) {
+		ResponseEntity<User> getUserResponse = keycloakUserManagementService.getUser(userId);
+		if (getUserResponse.getStatusCode() != HttpStatus.OK) {
 			throw new AccountTransferException(String.format("Could not get User info for user %s", userId));
 		}
-		User user = response.getBody();
+		User user = getUserResponse.getBody();
 		
 		// Check if the org is already assigned
-		HashMap<String, Object> attributes = (HashMap<String, Object>)user.getAttributes();
-		List<String> orgDetails = (List<String>)attributes.get(ATTRIBUTE_ORG_DETAILS);
-		if (orgDetails == null) {
-			orgDetails = new ArrayList<>();
-		}
+		List<String> orgDetails = loadOrgDetails(user);
 		if (organizationExists(orgDetails, ldapOrg)) {
 			logger.debug("Organization {} is already assigned to User {}", ldapOrg.getId(), user.getUsername());
 			return;
 		}			
 
 		// Transfer the organization
+		ObjectMapper mapper  = new ObjectMapper();
 		try {
-			ObjectMapper mapper  = new ObjectMapper();
 			String newOrg = mapper.writeValueAsString(ldapOrg);
 			orgDetails.add(newOrg);
 		} catch (JsonProcessingException e) {
@@ -176,8 +171,36 @@ public class AccountsController {
 		}
 
 		// Update the user in Keycloak/UMS
-		keycloakUserManagementService.updateUser(userId, user);
-		logger.debug("Organization {} is assigned to User {}", ldapOrg.getId(), user.getUsername());
+		ResponseEntity<String> updateUserResponse = keycloakUserManagementService.updateUser(userId, user);
+		if (updateUserResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
+			throw new AccountTransferException(String.format("Error adding organization %s to user %s", ldapOrg.getId(), user.getUsername()));
+		}
+		
+		logger.debug("Organization {} assigned to User {}", ldapOrg.getId(), user.getUsername());
+	}
+	
+	/**
+	 * Loads the orgDetails from the User. Creates the necessary structure if it doesn't exist.
+	 * 
+	 * @param user The keycloak user
+	 * @return The user's orgDetails
+	 */
+	@SuppressWarnings("unchecked")
+	private List<String> loadOrgDetails(User user) {
+		if (user.getAttributes() == null) {
+			HashMap<String, Object> attributes = new LinkedHashMap<>();
+			user.setAttributes(attributes);
+		}
+		
+		// Check if the org is already assigned
+		HashMap<String, Object> attributes = (HashMap<String, Object>)user.getAttributes();
+		List<String> orgDetails = (List<String>)attributes.get(ATTRIBUTE_ORG_DETAILS);
+		if (orgDetails == null) {
+			orgDetails = new ArrayList<>();
+			attributes.put(ATTRIBUTE_ORG_DETAILS, orgDetails);
+		}
+		
+		return orgDetails;
 	}
 	
 	/**
@@ -229,20 +252,6 @@ public class AccountsController {
 		}
 
 		return null;
-	}
-	
-	public static void main(String[] args) {
-		List<String> values = new ArrayList<>();
-		values.add("one");
-		values.add("two");
-	
-		HashMap<String, Object> attributes = new LinkedHashMap<>();
-		attributes.put("key", values);
-		
-		List<String> mapValues = (List<String>)attributes.get("key");
-		mapValues.add("three");
-		
-		System.out.println(attributes.get("key"));
 	}
 
 }
