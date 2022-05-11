@@ -1,5 +1,10 @@
 package ca.bc.gov.hlth.accounttransfer.controller;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+
 import javax.validation.Valid;
 
 import org.apache.commons.lang3.StringUtils;
@@ -17,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import ca.bc.gov.hlth.accounttransfer.exception.AccountTransferException;
 import ca.bc.gov.hlth.accounttransfer.model.accountTransfer.AccountTransferRequest;
 import ca.bc.gov.hlth.accounttransfer.model.accountTransfer.AccountTransferResponse;
 import ca.bc.gov.hlth.accounttransfer.model.accountTransfer.StatusEnum;
@@ -39,7 +45,8 @@ public class AccountsController {
 
 	private static final String MSPDIRECT = "MSPDIRECT-SERVICE";
 	private static final String SUB_CLAIM = "sub";
-
+	private static final String ATTRIBUTE_ORG_DETAILS = "org_details";
+	
 	private static final String ERROR_INVALID_USER_PASS = "Invalid Username or Password";
 	private static final String ERROR_ACCOUNT_LOCKED = "Account is locked";
 	private static final String ERROR_NO_ROLE = "User has no role";
@@ -107,16 +114,21 @@ public class AccountsController {
 			}
 
 			// If the role transfer was successful, transfer the Organization as well
+			Boolean transferError = Boolean.FALSE;
 			try {
 				transferOrganization(userId, ldapResponse.getOrgDetails());	
-			} catch (Exception e) {
-				logger.error("Could not transfer Organization {} for User {}", ldapResponse.getOrgDetails().getId(), userId);
+			} catch (AccountTransferException e) {
+				logger.error(e.getMessage());
+				transferError = Boolean.TRUE;
 			}
-			
-
-			String responseMessage = String.format("Account transfer successful for user %s for the application %s with the role %s",
-					accountTransferRequest.getUsername(), MSPDIRECT, ldapResponse.getMspDirectRole().toUpperCase());
-			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS, responseMessage,
+						
+			StringBuilder sb = new StringBuilder();
+			sb.append(String.format("Account transfer successful for user %s for the application %s with the role %s",
+					accountTransferRequest.getUsername(), MSPDIRECT, ldapResponse.getMspDirectRole().toUpperCase()));
+			if (Boolean.TRUE.equals(transferError)) {
+				sb.append("\n Note: Organization transfer failed. Please contact support to have your organization set up manually.");
+			}
+			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS, sb.toString(),
 					ldapResponse.getMspDirectRole().toUpperCase());
 
 			return ResponseEntity.ok(response);
@@ -128,52 +140,59 @@ public class AccountsController {
 		return ResponseEntity.ok(response);
 	}
 
-	private void transferOrganization(String userId, OrgDetails ldapOrg) {
+	/**
+	 * Transfers the users Organization from LDAP to Keycloak.
+	 * @param userId The Keycloak userId
+	 * @param ldapOrg The organization in LDAP.
+	 * @throws AccountTransferException 
+	 */
+	@SuppressWarnings("unchecked")
+	private void transferOrganization(String userId, OrgDetails ldapOrg) throws AccountTransferException {
 		// Look up the user in Keycloak/UMS
 		ResponseEntity<User> response = keycloakUserManagementService.getUser(userId);
 		if (response.getStatusCode() != HttpStatus.OK) {
-			logger.error("Could not get User info for user {}", userId);
-			return;
+			throw new AccountTransferException(String.format("Could not get User info for user %s", userId));
 		}
 		User user = response.getBody();
-		logger.debug("User: {}", user);
 		
 		// Check if the org is already assigned
-		if (organizationExists(user, ldapOrg)) {
-			logger.info("Organization {} is already assigned to User {}", ldapOrg.getId(), user.getUsername());
-			return;
+		HashMap<String, Object> attributes = (HashMap<String, Object>)user.getAttributes();
+		List<String> orgDetails = (List<String>)attributes.get(ATTRIBUTE_ORG_DETAILS);
+		if (orgDetails == null) {
+			orgDetails = new ArrayList<>();
 		}
+		if (organizationExists(orgDetails, ldapOrg)) {
+			logger.debug("Organization {} is already assigned to User {}", ldapOrg.getId(), user.getUsername());
+			return;
+		}			
 
 		// Transfer the organization
-		String newOrg;
 		try {
 			ObjectMapper mapper  = new ObjectMapper();
-			newOrg = mapper.writeValueAsString(ldapOrg);
+			String newOrg = mapper.writeValueAsString(ldapOrg);
+			orgDetails.add(newOrg);
 		} catch (JsonProcessingException e) {
-			logger.error("Could not convert LDAP Organization");
-			return;
+			throw new AccountTransferException("Could not convert LDAP Organization", e);
 		}
-		System.out.println(newOrg);
 
-		user.getAttributes().getOrgDetails().add(newOrg);
-
-		// Update the uyser in Keycloak/UMS
-		// keycloakUserManagementService.updateUser(userId, null);
+		// Update the user in Keycloak/UMS
+		keycloakUserManagementService.updateUser(userId, user);
+		logger.debug("Organization {} is assigned to User {}", ldapOrg.getId(), user.getUsername());
 	}
 	
 	/**
 	 * Checks if the LDAP organization exists on the Keycloak user.
 	 * 
-	 * @param user The Keycloak user
+	 * @param kcOrgs The orgs from Keycloak
 	 * @param ldapOrg The LDAP organization
 	 * @return True if the organization already exists
 	 */
-	private Boolean organizationExists(User user, OrgDetails ldapOrg) {
+	private Boolean organizationExists(List<String> kcOrgs , OrgDetails ldapOrg) {
 		ObjectMapper mapper  = new ObjectMapper();
-		for (String org: user.getAttributes().getOrgDetails()) {
+		for (String org: kcOrgs) {
 			try {
-				OrgDetails orgDetails = mapper.readValue(org, OrgDetails.class);
-				if (orgDetails.equals(ldapOrg)) {
+				OrgDetails kcOrg = mapper.readValue(org, OrgDetails.class);
+				if (kcOrg.equals(ldapOrg)) {
 					return Boolean.TRUE;
 				}			
 			} catch (JsonProcessingException e) {
@@ -210,6 +229,20 @@ public class AccountsController {
 		}
 
 		return null;
+	}
+	
+	public static void main(String[] args) {
+		List<String> values = new ArrayList<>();
+		values.add("one");
+		values.add("two");
+	
+		HashMap<String, Object> attributes = new LinkedHashMap<>();
+		attributes.put("key", values);
+		
+		List<String> mapValues = (List<String>)attributes.get("key");
+		mapValues.add("three");
+		
+		System.out.println(attributes.get("key"));
 	}
 
 }

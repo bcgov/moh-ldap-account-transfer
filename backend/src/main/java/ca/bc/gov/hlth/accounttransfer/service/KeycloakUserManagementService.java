@@ -66,8 +66,9 @@ public class KeycloakUserManagementService {
         String path = String.format("%s/%s", usersPath, userId);
 
         return userManagementWebClient
-                .post()
+                .put()
                 .uri(uri -> uri.path(path).build())
+                .bodyValue(user)
                 .retrieve()
                 .toEntity(String.class)
                 .block();
