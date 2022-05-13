@@ -13,7 +13,7 @@ public class LdapResponse {
 	private String mspDirectRole;
 
 	@JsonProperty("org_details")
-	private Object orgDetails;
+	private OrgDetails orgDetails;
 
 	public String getUserName() {
 		return userName;
@@ -47,11 +47,11 @@ public class LdapResponse {
 		this.mspDirectRole = mspDirectRole;
 	}
 
-	public Object getOrgDetails() {
+	public OrgDetails getOrgDetails() {
 		return orgDetails;
 	}
 
-	public void setOrgDetails(Object orgDetails) {
+	public void setOrgDetails(OrgDetails orgDetails) {
 		this.orgDetails = orgDetails;
 	}
 
