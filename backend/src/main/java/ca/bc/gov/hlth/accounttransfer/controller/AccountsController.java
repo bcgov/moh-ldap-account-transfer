@@ -142,6 +142,7 @@ public class AccountsController {
 
 	/**
 	 * Transfers the users Organization from LDAP to Keycloak.
+	 * 
 	 * @param userId The Keycloak userId
 	 * @param ldapOrg The organization in LDAP.
 	 * @throws AccountTransferException 
@@ -222,7 +223,7 @@ public class AccountsController {
 				// This is unlikely. Just log and move on.
 				logger.error(e.getMessage());
 			}
-		};
+		}
 		return Boolean.FALSE;
 	}
 
