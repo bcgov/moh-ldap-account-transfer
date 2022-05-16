@@ -10,12 +10,17 @@ env:
   IMAGE_TAGS:
 
 on:
+  # Run the workflow on either:
+  #   a push to 'main' branch
+  #   manually through the Action
+  # --------------------------------------------------------------------------
+
   push:
     branches: [main]
     paths:
       - "frontend/**"
 
-    workflow_dispatch:
+  workflow_dispatch:
     inputs:
       branch:
         description: "Enter branch name:"
