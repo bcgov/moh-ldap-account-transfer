@@ -5,6 +5,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 
+import ca.bc.gov.hlth.accounttransfer.model.keycloak.User;
+
 @Service
 public class KeycloakUserManagementService {
 
@@ -42,6 +44,31 @@ public class KeycloakUserManagementService {
                 .post()
                 .uri(uri -> uri.path(path).build())
                 .bodyValue(rolesToSend)
+                .retrieve()
+                .toEntity(String.class)
+                .block();
+    }
+    
+    public ResponseEntity<User> getUser(String userId) {
+
+        String path = String.format("%s/%s", usersPath, userId);
+
+        return userManagementWebClient
+                .get()
+                .uri(uri -> uri.path(path).build())
+                .retrieve()
+                .toEntity(User.class)
+                .block();
+    }
+    
+    public ResponseEntity<String> updateUser(String userId, User user) {
+
+        String path = String.format("%s/%s", usersPath, userId);
+
+        return userManagementWebClient
+                .put()
+                .uri(uri -> uri.path(path).build())
+                .bodyValue(user)
                 .retrieve()
                 .toEntity(String.class)
                 .block();
