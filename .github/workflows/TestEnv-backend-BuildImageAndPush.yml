@@ -21,11 +21,6 @@ on:
       - "backend/**"
 
   workflow_dispatch:
-    # inputs:
-    #   branch:
-    #     description: 'Enter branch name:'
-    #     required: true
-    #     default: main
 
 jobs:
   buildAndPush:
@@ -81,27 +76,27 @@ jobs:
       # Kustomize in the runner, update the image ID, commit the change, and
       # push the changes back to the manifest repository.
       # ------------------------------------------------------------------------
-      - name: Prepare deploy key
-        uses: webfactory/ssh-agent@v0.5.3
-        with:
-          ssh-private-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
+      # - name: Prepare deploy key
+      #   uses: webfactory/ssh-agent@v0.5.3
+      #   with:
+      #     ssh-private-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
 
-      - name: Check out manifest repo
-        uses: actions/checkout@v2
-        with:
-          ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
-          repository: ${{ secrets.GITOPS_C5839F_REPO }}
-          ref: main
+      # - name: Check out manifest repo
+      #   uses: actions/checkout@v2
+      #   with:
+      #     ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
+      #     repository: ${{ secrets.GITOPS_C5839F_REPO }}
+      #     ref: main
 
-      - name: Set up Kustomize
-        uses: imranismail/setup-kustomize@v1
+      # - name: Set up Kustomize
+      #   uses: imranismail/setup-kustomize@v1
 
-      - name: Update image ID and commit change
-        if: ${{ success() }}
-        run: |
-          cd account-transfer-devops/overlays/test
-          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/c5839f-test/${{ env.IMAGE_NAME }}@${{ steps.push-image-test.outputs.digest }}"
-          git config --local user.email "action@github.com"
-          git config --local user.name "GitHub Action"
-          git commit -am "Update Backend API image ID for test"
-          git push origin
+      # - name: Update image ID and commit change
+      #   if: ${{ success() }}
+      #   run: |
+      #     cd account-transfer-devops/overlays/test
+      #     kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/c5839f-test/${{ env.IMAGE_NAME }}@${{ steps.push-image-test.outputs.digest }}"
+      #     git config --local user.email "action@github.com"
+      #     git config --local user.name "GitHub Action"
+      #     git commit -am "Update Backend API image ID for test"
+      #     git push origin
