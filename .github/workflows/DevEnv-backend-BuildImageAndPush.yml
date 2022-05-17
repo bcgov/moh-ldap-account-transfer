@@ -82,9 +82,9 @@ jobs:
       - name: Check out manifest repo
         uses: actions/checkout@v2
         with:
-          ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
+          ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
           repository: ${{ secrets.GITOPS_C5839F_REPO }}
-          ref: 6016-setup-user-transfer-environment
+          ref: 6016-Setup-user-transfer
 
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v1
