@@ -19,7 +19,7 @@ on:
       branch:
         description: "Enter branch name:"
         required: true
-        default: main
+        default: 6148-Create-Actions-for-User-Transfer-deployment
 jobs:
   buildAndPush:
     runs-on: ubuntu-latest
@@ -77,12 +77,12 @@ jobs:
       - name: Prepare deploy key
         uses: webfactory/ssh-agent@v0.5.3
         with:
-          ssh-private-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
+          ssh-private-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
 
       - name: Check out manifest repo
         uses: actions/checkout@v2
         with:
-          ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
+          ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
           repository: ${{ secrets.GITOPS_C5839F_REPO }}
           ref: 6016-Setup-user-transfer
 
