@@ -54,20 +54,20 @@ jobs:
         uses: redhat-actions/push-to-registry@v2
         with:
           image: ${{ steps.build-docker.outputs.image }}
-          tags: ${{ steps.build-docker.outputs.tags }}
           registry: ${{ env.TOOLSNS_IMAGE_REGISTRY }}
+          tags: image-registry.apps.silver.devops.gov.bc.ca/c5839f-tools/account-transfer-backend:${GITHUB_SHA::12} image-registry.apps.silver.devops.gov.bc.ca/c5839f-dev/account-transfer-backend-dev:${GITHUB_SHA::12}
           username: ${{ env.IMAGE_REGISTRY_USER }}
           password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
-      - name: Push to dev registry
-        id: push-image-dev
-        uses: redhat-actions/push-to-registry@v2
-        with:
-          image: ${{ steps.build-docker.outputs.image }}-dev
-          tags: ${{ steps.build-docker.outputs.tags }}
-          registry: ${{ env.DEVNS_IMAGE_REGISTRY }}
-          username: ${{ env.IMAGE_REGISTRY_USER }}
-          password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
+      # - name: Push to dev registry
+      #   id: push-image-dev
+      #   uses: redhat-actions/push-to-registry@v2
+      #   with:
+      #     image: ${{ steps.build-docker.outputs.image }}-dev
+      #     tags: ${{ steps.build-docker.outputs.tags }}
+      #     registry: ${{ env.DEVNS_IMAGE_REGISTRY }}
+      #     username: ${{ env.IMAGE_REGISTRY_USER }}
+      #     password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
       # Update the image ID in the manifest repository used by Argo CD.
       # We need to use the SSH deploy key to check out the manifest repo, set up
