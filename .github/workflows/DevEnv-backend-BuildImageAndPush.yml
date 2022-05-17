@@ -63,7 +63,7 @@ jobs:
         id: push-image-dev
         uses: redhat-actions/push-to-registry@v2
         with:
-          image: ${{ steps.build-docker.outputs.image }}
+          image: ${{ steps.build-docker.outputs.image }}-dev
           tags: ${{ steps.build-docker.outputs.tags }}
           registry: ${{ env.DEVNS_IMAGE_REGISTRY }}
           username: ${{ env.IMAGE_REGISTRY_USER }}
