@@ -67,11 +67,11 @@ jobs:
           username: ${{ env.IMAGE_REGISTRY_USER }}
           password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
-      Update the image ID in the manifest repository used by Argo CD.
-      We need to use the SSH deploy key to check out the manifest repo, set up
-      Kustomize in the runner, update the image ID, commit the change, and
-      push the changes back to the manifest repository.
-      ------------------------------------------------------------------------
+      # Update the image ID in the manifest repository used by Argo CD.
+      # We need to use the SSH deploy key to check out the manifest repo, set up
+      # Kustomize in the runner, update the image ID, commit the change, and
+      # push the changes back to the manifest repository.
+      # ------------------------------------------------------------------------
       - name: Prepare deploy key
         uses: webfactory/ssh-agent@v0.5.3
         with:
