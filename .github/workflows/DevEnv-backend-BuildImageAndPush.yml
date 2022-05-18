@@ -53,9 +53,9 @@ jobs:
         id: push-image-tools
         uses: redhat-actions/push-to-registry@v2
         with:
-          image: ${{ steps.build-docker.outputs.image }}
-          registry: ${{ env.TOOLSNS_IMAGE_REGISTRY }}
-          tags: image-registry.apps.silver.devops.gov.bc.ca/c5839f-tools/account-transfer-backend:${{ steps.build-docker.outputs.tags }}
+          # image: ${{ steps.build-docker.outputs.image }}
+          # registry: ${{ env.TOOLSNS_IMAGE_REGISTRY }}
+          tags: ${{ steps.build-docker.outputs.tags }}
           #image-registry.apps.silver.devops.gov.bc.ca/c5839f-dev/account-transfer-backend-dev:${{ steps.build-docker.outputs.tags }}
           username: ${{ env.IMAGE_REGISTRY_USER }}
           password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
