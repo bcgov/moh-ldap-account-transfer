@@ -45,7 +45,7 @@ jobs:
         id: build-docker
         uses: redhat-actions/buildah-build@v2
         with:
-          tags: ${{ TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAGS }} ${{ DEVNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ DEV_SUFFIX }}:${{ env.IMAGE_TAGS }}
+          tags: ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAGS }} ${{ env.DEVNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.DEV_SUFFIX }}:${{ env.IMAGE_TAGS }}
           context: ./backend
           dockerfiles: |
             ./backend/Dockerfile
@@ -83,7 +83,7 @@ jobs:
         if: ${{ success() }}
         run: |
           cd account-transfer-devops/overlays/dev
-          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/c5839f-dev/${{ env.IMAGE_NAME }}${{ DEV_SUFFIX }}@${{ steps.push-images.outputs.digest }}"
+          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/c5839f-dev/${{ env.IMAGE_NAME }}${{ env.DEV_SUFFIX }}@${{ steps.push-images.outputs.digest }}"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -am "Update Backend API image ID for Dev"
