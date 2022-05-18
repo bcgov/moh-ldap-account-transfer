@@ -44,7 +44,7 @@ jobs:
         uses: redhat-actions/buildah-build@v2
         with:
           # image: ${{ env.IMAGE_NAME }}
-          tags: image-registry.apps.silver.devops.gov.bc.ca/c5839f-tools/account-transfer-backend:${{ env.IMAGE_TAGS }}
+          tags: image-registry.apps.silver.devops.gov.bc.ca/c5839f-tools/account-transfer-backend:${{ env.IMAGE_TAGS }} image-registry.apps.silver.devops.gov.bc.ca/c5839f-dev/account-transfer-backend-dev:${{ env.IMAGE_TAGS }}
           context: ./backend
           dockerfiles: |
             ./backend/Dockerfile
