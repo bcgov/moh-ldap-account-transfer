@@ -52,7 +52,6 @@ jobs:
         id: build-docker
         uses: redhat-actions/buildah-build@v2
         with:
-          tags: ${{ env.IMAGE_TAGS }}
           tags: ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAGS }} ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:${{ env.IMAGE_TAGS }}
           context: ./backend
           dockerfiles: |
