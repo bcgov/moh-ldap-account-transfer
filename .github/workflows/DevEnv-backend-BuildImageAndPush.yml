@@ -55,7 +55,8 @@ jobs:
         with:
           image: ${{ steps.build-docker.outputs.image }}
           registry: ${{ env.TOOLSNS_IMAGE_REGISTRY }}
-          tags: image-registry.apps.silver.devops.gov.bc.ca/c5839f-tools/account-transfer-backend:${{ steps.build-docker.outputs.tags }} image-registry.apps.silver.devops.gov.bc.ca/c5839f-dev/account-transfer-backend-dev:${{ steps.build-docker.outputs.tags }}
+          tags: image-registry.apps.silver.devops.gov.bc.ca/c5839f-tools/account-transfer-backend:${{ steps.build-docker.outputs.tags }}
+          #image-registry.apps.silver.devops.gov.bc.ca/c5839f-dev/account-transfer-backend-dev:${{ steps.build-docker.outputs.tags }}
           username: ${{ env.IMAGE_REGISTRY_USER }}
           password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
