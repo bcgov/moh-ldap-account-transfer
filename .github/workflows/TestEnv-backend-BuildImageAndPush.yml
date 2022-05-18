@@ -7,6 +7,7 @@ env:
   IMAGE_REGISTRY_USER: ${{ secrets.C5839F_OPENSHIFT_GITHUB_ACTIONS_SA_USER }}
   IMAGE_REGISTRY_PASSWORD: ${{ secrets.C5839F_OPENSHIFT_GITHUB_ACTIONS_SA_TOKEN }}
   IMAGE_NAME: account-transfer-backend
+  TEST_SUFFIX: -test
   IMAGE_TAGS:
 
 on:
@@ -45,63 +46,53 @@ jobs:
         run: |
           echo "IMAGE_TAGS=latest ${GITHUB_SHA::12} account-transfer-test" | tee -a $GITHUB_ENV
 
-      # Build from docker file
+      # Build from docker file. Tags the build with two tags for use in the next step which pushes them to the registry. One tag for tools and one for test. Only 'tags' are used as this allows specifying
+      # the image name in each tag. This is needed because it is different in each namespace as it contains '-test' suffix in the test namespace. Note, with multiple tags both have the same digest value.
       - name: Build from Dockerfile
         id: build-docker
         uses: redhat-actions/buildah-build@v2
         with:
-          image: ${{ env.IMAGE_NAME }}
           tags: ${{ env.IMAGE_TAGS }}
+          tags: ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAGS }} ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:${{ env.IMAGE_TAGS }}
           context: ./backend
           dockerfiles: |
             ./backend/Dockerfile
 
-      - name: Push to tools registry
-        id: push-image-tools
+      # Push both images at the same time using different tags from the build. This allows having different image names.
+      - name: Push to tools and test registry
+        id: push-images
         uses: redhat-actions/push-to-registry@v2
         with:
-          image: ${{ steps.build-docker.outputs.image }}
           tags: ${{ steps.build-docker.outputs.tags }}
-          registry: ${{ env.TOOLSNS_IMAGE_REGISTRY }}
           username: ${{ env.IMAGE_REGISTRY_USER }}
           password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
-      - name: Push to test registry
-        id: push-image-test
-        uses: redhat-actions/push-to-registry@v2
+      Update the image ID in the manifest repository used by Argo CD.
+      We need to use the SSH deploy key to check out the manifest repo, set up
+      Kustomize in the runner, update the image ID, commit the change, and
+      push the changes back to the manifest repository.
+      ------------------------------------------------------------------------
+      - name: Prepare deploy key
+        uses: webfactory/ssh-agent@v0.5.3
         with:
-          image: ${{ steps.build-docker.outputs.image }}
-          tags: ${{ steps.build-docker.outputs.tags }}
-          registry: ${{ env.TESTNS_IMAGE_REGISTRY }}
-          username: ${{ env.IMAGE_REGISTRY_USER }}
-          password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
+          ssh-private-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
 
-      # Update the image ID in the manifest repository used by Argo CD.
-      # We need to use the SSH deploy key to check out the manifest repo, set up
-      # Kustomize in the runner, update the image ID, commit the change, and
-      # push the changes back to the manifest repository.
-      # ------------------------------------------------------------------------
-      # - name: Prepare deploy key
-      #   uses: webfactory/ssh-agent@v0.5.3
-      #   with:
-      #     ssh-private-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
+      - name: Check out manifest repo
+        uses: actions/checkout@v2
+        with:
+          ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
+          repository: ${{ secrets.GITOPS_C5839F_REPO }}
+          ref: 6016-Setup-user-transfer
 
-      # - name: Check out manifest repo
-      #   uses: actions/checkout@v2
-      #   with:
-      #     ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
-      #     repository: ${{ secrets.GITOPS_C5839F_REPO }}
-      #     ref: main
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v1
 
-      # - name: Set up Kustomize
-      #   uses: imranismail/setup-kustomize@v1
-
-      # - name: Update image ID and commit change
-      #   if: ${{ success() }}
-      #   run: |
-      #     cd account-transfer-devops/overlays/test
-      #     kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/c5839f-test/${{ env.IMAGE_NAME }}@${{ steps.push-image-test.outputs.digest }}"
-      #     git config --local user.email "action@github.com"
-      #     git config --local user.name "GitHub Action"
-      #     git commit -am "Update Backend API image ID for test"
-      #     git push origin
+      - name: Update image ID and commit change
+        if: ${{ success() }}
+        run: |
+          cd account-transfer-devops/overlays/test
+          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/c5839f-test/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}@${{ steps.push-images.outputs.digest }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -am "Update Backend API image ID for test"
+          git push origin
