@@ -40,14 +40,15 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      # Determine the tags
+      # Determine the tags. Create all tags with full names. Only 'tags' are used as this allows specifying
+      # the image name in each tag. This is needed because it is different in each namespace as it contains '-test' suffix in the test namespace.
+      # Note, with multiple tags all have the same digest value.
       - name: Determine image tags
         if: env.IMAGE_TAGS == ''
         run: |
           echo "IMAGE_TAGS=${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA::12} ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:account-transfer-test ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:latest ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:${GITHUB_SHA::12} ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:account-transfer-test" | tee -a $GITHUB_ENV
 
-      # Build from docker file. Tags the build with two tags for use in the next step which pushes them to the registry. One tag for tools and one for test. Only 'tags' are used as this allows specifying
-      # the image name in each tag. This is needed because it is different in each namespace as it contains '-test' suffix in the test namespace. Note, with multiple tags both have the same digest value.
+      # Build from docker file.
       - name: Build from Dockerfile
         id: build-docker
         uses: redhat-actions/buildah-build@v2
@@ -57,7 +58,7 @@ jobs:
           dockerfiles: |
             ./backend/Dockerfile
 
-      # Push both images at the same time using different tags from the build. This allows having different image names.
+      # Push all images at the same time using different tags from the build. This allows having different image names.
       - name: Push to tools and test registry
         id: push-images
         uses: redhat-actions/push-to-registry@v2
