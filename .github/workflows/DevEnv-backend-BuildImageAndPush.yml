@@ -7,6 +7,7 @@ env:
   IMAGE_REGISTRY_USER: ${{ secrets.C5839F_OPENSHIFT_GITHUB_ACTIONS_SA_USER }}
   IMAGE_REGISTRY_PASSWORD: ${{ secrets.C5839F_OPENSHIFT_GITHUB_ACTIONS_SA_TOKEN }}
   IMAGE_NAME: account-transfer-backend
+  DEV_SUFFIX: -dev
   IMAGE_TAGS:
 
 on:
@@ -38,37 +39,25 @@ jobs:
         run: |
           echo "IMAGE_TAGS=${GITHUB_SHA::12}" | tee -a $GITHUB_ENV
 
-      # Build from docker file
+      # Build from docker file. Tags the build with two tags for use in the next step which pushes them to the registry. One tag for tools and one for dev. Only 'tags' are used as this allows specifying
+      # the image name in each tag. This is needed because it is different in each namespace as it contains '-dev' suffix in the dev namespace. Note, with multiple tags both have the same digest value.
       - name: Build from Dockerfile
         id: build-docker
         uses: redhat-actions/buildah-build@v2
         with:
-          # image: ${{ env.IMAGE_NAME }}
-          tags: image-registry.apps.silver.devops.gov.bc.ca/c5839f-tools/account-transfer-backend:${{ env.IMAGE_TAGS }} image-registry.apps.silver.devops.gov.bc.ca/c5839f-dev/account-transfer-backend-dev:${{ env.IMAGE_TAGS }}
+          tags: ${{ TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAGS }} ${{ DEVNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ DEV_SUFFIX }}:${{ env.IMAGE_TAGS }}
           context: ./backend
           dockerfiles: |
             ./backend/Dockerfile
 
-      - name: Push to tools registry
-        id: push-image-tools
+      # Push both images at the same time using different tags from the build. This allows having different image names.
+      - name: Push to tools and dev registry
+        id: push-images
         uses: redhat-actions/push-to-registry@v2
         with:
-          # image: ${{ steps.build-docker.outputs.image }}
-          # registry: ${{ env.TOOLSNS_IMAGE_REGISTRY }}
           tags: ${{ steps.build-docker.outputs.tags }}
-          #image-registry.apps.silver.devops.gov.bc.ca/c5839f-dev/account-transfer-backend-dev:${{ steps.build-docker.outputs.tags }}
           username: ${{ env.IMAGE_REGISTRY_USER }}
           password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
-
-      # - name: Push to dev registry
-      #   id: push-image-dev
-      #   uses: redhat-actions/push-to-registry@v2
-      #   with:
-      #     image: ${{ steps.build-docker.outputs.image }}-dev
-      #     tags: ${{ steps.build-docker.outputs.tags }}
-      #     registry: ${{ env.DEVNS_IMAGE_REGISTRY }}
-      #     username: ${{ env.IMAGE_REGISTRY_USER }}
-      #     password: ${{ env.IMAGE_REGISTRY_PASSWORD }}
 
       # Update the image ID in the manifest repository used by Argo CD.
       # We need to use the SSH deploy key to check out the manifest repo, set up
@@ -94,7 +83,7 @@ jobs:
         if: ${{ success() }}
         run: |
           cd account-transfer-devops/overlays/dev
-          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/c5839f-dev/${{ env.IMAGE_NAME }}-dev@${{ steps.push-image-tools.outputs.digest }}"
+          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/c5839f-dev/${{ env.IMAGE_NAME }}${{ DEV_SUFFIX }}@${{ steps.push-images.outputs.digest }}"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -am "Update Backend API image ID for Dev"
