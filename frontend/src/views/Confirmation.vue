@@ -3,10 +3,12 @@
     <h1>MSP Direct Account Transfer</h1>
     <p>
       You have successfully transferred your MSP Direct Account.<br />
-      Going forward you will login to MSP Direct with your {{ identityProvider }} credential. You may wish to bookmark this link for future use.<br />
-      Click below to continue to MSP Direct.
+      Going forward you will login to MSP Direct with your {{ identityProvider }} credential.
     </p>
-    <AppButton><a :href="mspDirectURL" target="_blank">Login to MSP Direct</a></AppButton>
+    <p>
+      Clicking the link will take you to MSP Direct: <a :href="mspDirectURL" target="_blank">{{ mspDirectURL }}</a><br/>
+      You may wish to bookmark this link for future use.
+    </p>
   </section>
 </template>
 
