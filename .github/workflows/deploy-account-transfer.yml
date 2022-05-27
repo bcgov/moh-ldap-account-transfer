@@ -110,8 +110,8 @@ jobs:
       # 4. Push the image to selected repository
       - name: Push Image
         run: |
-          oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}{{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
-          oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}{{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
+          oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
+          oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
 
       # 5. Edit the selcted Argo CD manifest file
       # Update the image ID in the manifest repository used by Argo CD.
@@ -138,8 +138,8 @@ jobs:
         if: ${{ success() }}
         run: |
           cd account-transfer-devops/overlays/${{ github.event.inputs.Environment }}
-          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}{{ steps.set-deploy-suffix.outputs.result }}@${{ env.BACKEND_IMAGE_ID }}"
-          kustomize edit set image "frontend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}{{ steps.set-deploy-suffix.outputs.result }}@${{ env.FRONTEND_IMAGE_ID }}"
+          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.BACKEND_IMAGE_ID }}"
+          kustomize edit set image "frontend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.FRONTEND_IMAGE_ID }}"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -am "Update frontend and backend image ids using deploy workflow."
