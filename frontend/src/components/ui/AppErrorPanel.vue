@@ -42,9 +42,6 @@ export default {
 </script>
 
 <style scoped>
-:global(.fix-me) {
-  background-color: yellow !important;
-}
 .error-container {
   align-items: center;
   display: flex;
