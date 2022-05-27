@@ -142,5 +142,5 @@ jobs:
           kustomize edit set image "frontend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.FRONTEND_IMAGE_ID }}"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -am "Update frontend and backend image ids using deploy workflow."
+          git commit -am "Deploying release build: ${{ env.VERSION }} in ${{ github.event.inputs.Environment }} using deploy-account-transfer workflow."
           git push origin
