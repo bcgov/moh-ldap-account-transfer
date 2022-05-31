@@ -43,7 +43,7 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  deploy:
+  compute:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -132,13 +132,21 @@ jobs:
             else {
               core.info(`✅ Valid image found.`);
             }
-      # 4. Push the image to selected repository
+
+  deploy_without_approval:
+    if: github.event.inputs.Environment  != 'production'
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # 1. Push the image to selected repository
       - name: Push Image
         run: |
           oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
           oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
 
-      # 5. Edit the selcted Argo CD manifest file
+      # 2. Edit the selcted Argo CD manifest file
       # Update the image ID in the manifest repository used by Argo CD.
       # We need to use the SSH deploy key to check out the manifest repo, set up
       # Kustomize in the runner, update the image ID, commit the change, and
@@ -154,7 +162,54 @@ jobs:
         with:
           ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
           repository: ${{ secrets.GITOPS_C5839F_REPO }}
-          ref: 6016-Setup-user-transfer
+          ref: 6586-Setup-Prod
+
+      - name: Set up Kustomize
+        uses: imranismail/setup-kustomize@v1
+
+      - name: Update image ID and commit change
+        if: ${{ success() }}
+        run: |
+          cd account-transfer-devops/overlays/${{ steps.set-devops-dir.outputs.result }}
+          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.BACKEND_IMAGE_ID }}"
+          kustomize edit set image "frontend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.FRONTEND_IMAGE_ID }}"
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git commit -am "Deploying release build: ${{ env.VERSION }} in ${{ github.event.inputs.Environment }} using deploy-account-transfer workflow."
+          git push origin
+
+  deploy_with_approval:
+    if: github.event.inputs.Environment  == 'production'
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+    # Ask for approval by specifying an environment which has been configured with required viewers in the repos Settings -> Environments
+    environment: ReviewRequired
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # 1. Push the image to selected repository
+      - name: Push Image
+        run: |
+          oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
+          oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
+
+      # 2. Edit the selcted Argo CD manifest file
+      # Update the image ID in the manifest repository used by Argo CD.
+      # We need to use the SSH deploy key to check out the manifest repo, set up
+      # Kustomize in the runner, update the image ID, commit the change, and
+      # push the changes back to the manifest repository.
+      # ------------------------------------------------------------------------
+      - name: Prepare deploy key
+        uses: webfactory/ssh-agent@v0.5.3
+        with:
+          ssh-private-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
+
+      - name: Check out manifest repo
+        uses: actions/checkout@v2
+        with:
+          ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
+          repository: ${{ secrets.GITOPS_C5839F_REPO }}
+          ref: 6586-Setup-Prod
 
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v1
