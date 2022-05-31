@@ -31,6 +31,7 @@ on:
           - dev
           - test
           - uat
+          - production
       Branch:
         description: "Enter branch name (Currently deployable releases are created only from main )"
         required: true
@@ -68,6 +69,9 @@ jobs:
             if (`${{ github.event.inputs.Environment }}` == 'test' || `${{ github.event.inputs.Environment }}` == 'uat') {
               return "c5839f-test"
             }
+            if (`${{ github.event.inputs.Environment }}` == 'production') {
+              return "c5839f-prod"
+            }
 
       - name: Compute deployment env suffix
         id: set-deploy-suffix
@@ -82,6 +86,27 @@ jobs:
             } 
             if ( `${{ github.event.inputs.Environment }}` == 'uat') {
               return "-uat"
+            }
+            if (`${{ github.event.inputs.Environment }}` == 'production') {
+              return ""
+            }
+
+      - name: Compute devops directory
+        id: set-devops-dir
+        uses: actions/github-script@v5
+        with:
+          script: |
+            if (`${{ github.event.inputs.Environment }}` == 'dev') {
+              return "dev"
+            }
+            if (`${{ github.event.inputs.Environment }}` == 'test') {
+              return "test"
+            } 
+            if ( `${{ github.event.inputs.Environment }}` == 'uat') {
+              return "uat"
+            }
+            if (`${{ github.event.inputs.Environment }}` == 'production') {
+              return "prod"
             }
 
       - name: Compute Version image
@@ -137,7 +162,7 @@ jobs:
       - name: Update image ID and commit change
         if: ${{ success() }}
         run: |
-          cd account-transfer-devops/overlays/${{ github.event.inputs.Environment }}
+          cd account-transfer-devops/overlays/${{ steps.set-devops-dir.outputs.result }}
           kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.BACKEND_IMAGE_ID }}"
           kustomize edit set image "frontend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.FRONTEND_IMAGE_ID }}"
           git config --local user.email "action@github.com"
