@@ -109,9 +109,17 @@ jobs:
               return "prod"
             }
 
+      - name: Set env values
+        run: |
+          echo "OPENSHIFT_NAMESPACE=${{steps.set-namespace.outputs.result}}"  | tee -a $GITHUB_ENV
+          echo "DEPLOY_SUFFIX=${{steps.set-deploy-suffix.outputs.result}}"  | tee -a $GITHUB_ENV
+          echo "DEVOPS_DIR=${{steps.set-devops-dir.outputs.result}}"  | tee -a $GITHUB_ENV
+
       - name: Compute Version image
         run: |
           echo "OPENSHIFT_NAMESPACE=${{steps.set-namespace.outputs.result}}"  | tee -a $GITHUB_ENV
+          echo "DEPLOY_SUFFIX=${{steps.set-deploy-suffix.outputs.result}}"  | tee -a $GITHUB_ENV
+          echo "DEVOPS_DIR=${{steps.set-devops-dir.outputs.result}}"  | tee -a $GITHUB_ENV
           echo "VERSION=${{ env.VERSION_PREFIX }}${{ github.event.inputs.Branch }}_${{ github.event.inputs.Release }}"  | tee -a $GITHUB_ENV
 
       - name: Find image
@@ -134,18 +142,28 @@ jobs:
             }
 
   deploy_without_approval:
-    if: github.event.inputs.Environment  != 'production'
+    if: github.event.inputs.Environment != 'production'
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
     needs: [compute]
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: Set environment variables from previous job
+        id: set-env
+        run: |
+          echo "VERSION=${{needs.compute.outputs.VERSION}}"  | tee -a $GITHUB_ENV
+          echo "OPENSHIFT_NAMESPACE=${{needs.compute.outputs.OPENSHIFT_NAMESPACE}}"  | tee -a $GITHUB_ENV
+          echo "DEPLOY_SUFFIX=${{needs.compute.outputs.DEPLOY_SUFFIX}}"  | tee -a $GITHUB_ENV
+          echo "DEVOPS_DIR=${{needs.compute.outputs.DEVOPS_DIR}}"  | tee -a $GITHUB_ENV
+          echo "FRONTEND_IMAGE_ID=${{needs.compute.outputs.FRONTEND_IMAGE_ID}}"  | tee -a $GITHUB_ENV
+          echo "BACKEND_IMAGE_NAME=${{needs.compute.outputs.BACKEND_IMAGE_NAME}}"  | tee -a $GITHUB_ENV
+
       # 1. Push the image to selected repository
       - name: Push Image
         run: |
-          oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
-          oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
+          oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}:${{ env.VERSION }}
+          oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}:${{ env.VERSION }}
 
       # 2. Edit the selcted Argo CD manifest file
       # Update the image ID in the manifest repository used by Argo CD.
@@ -171,9 +189,9 @@ jobs:
       - name: Update image ID and commit change
         if: ${{ success() }}
         run: |
-          cd account-transfer-devops/overlays/${{ steps.set-devops-dir.outputs.result }}
-          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.BACKEND_IMAGE_ID }}"
-          kustomize edit set image "frontend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.FRONTEND_IMAGE_ID }}"
+          cd account-transfer-devops/overlays/${{ env.DEVOPS_DIR }}
+          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}@${{ env.BACKEND_IMAGE_ID }}"
+          kustomize edit set image "frontend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}@${{ env.FRONTEND_IMAGE_ID }}"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -am "Deploying release build: ${{ env.VERSION }} in ${{ github.event.inputs.Environment }} using deploy-account-transfer workflow."
@@ -189,11 +207,21 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
+      - name: Set environment variables from previous job
+        id: set-env
+        run: |
+          echo "VERSION=${{needs.compute.outputs.VERSION}}"  | tee -a $GITHUB_ENV
+          echo "OPENSHIFT_NAMESPACE=${{needs.compute.outputs.OPENSHIFT_NAMESPACE}}"  | tee -a $GITHUB_ENV
+          echo "DEPLOY_SUFFIX=${{needs.compute.outputs.DEPLOY_SUFFIX}}"  | tee -a $GITHUB_ENV
+          echo "DEVOPS_DIR=${{needs.compute.outputs.DEVOPS_DIR}}"  | tee -a $GITHUB_ENV
+          echo "FRONTEND_IMAGE_ID=${{needs.compute.outputs.FRONTEND_IMAGE_ID}}"  | tee -a $GITHUB_ENV
+          echo "BACKEND_IMAGE_NAME=${{needs.compute.outputs.BACKEND_IMAGE_NAME}}"  | tee -a $GITHUB_ENV
+
       # 1. Push the image to selected repository
       - name: Push Image
         run: |
-          oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
-          oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}:${{ env.VERSION }}
+          oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}:${{ env.VERSION }}
+          oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}:${{ env.VERSION }}
 
       # 2. Edit the selcted Argo CD manifest file
       # Update the image ID in the manifest repository used by Argo CD.
@@ -219,9 +247,9 @@ jobs:
       - name: Update image ID and commit change
         if: ${{ success() }}
         run: |
-          cd account-transfer-devops/overlays/${{ steps.set-devops-dir.outputs.result }}
-          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.BACKEND_IMAGE_ID }}"
-          kustomize edit set image "frontend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ steps.set-deploy-suffix.outputs.result }}@${{ env.FRONTEND_IMAGE_ID }}"
+          cd account-transfer-devops/overlays/${{ env.DEVOPS_DIR }}
+          kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}@${{ env.BACKEND_IMAGE_ID }}"
+          kustomize edit set image "frontend-image=image-registry.openshift-image-registry.svc:5000/${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}@${{ env.FRONTEND_IMAGE_ID }}"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
           git commit -am "Deploying release build: ${{ env.VERSION }} in ${{ github.event.inputs.Environment }} using deploy-account-transfer workflow."
