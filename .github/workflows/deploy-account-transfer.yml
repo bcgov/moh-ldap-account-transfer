@@ -164,13 +164,22 @@ jobs:
           echo "FRONTEND_IMAGE_ID=${{needs.compute.outputs.FRONTEND_IMAGE_ID}}"  | tee -a $GITHUB_ENV
           echo "BACKEND_IMAGE_ID=${{needs.compute.outputs.BACKEND_IMAGE_ID}}"  | tee -a $GITHUB_ENV
 
-      # 1. Push the image to selected repository
+      # Login to OpenShift
+      - name: Log in to OpenShift
+        uses: redhat-actions/oc-login@v1
+        with:
+          openshift_server_url: ${{env.OPENSHIFT_SERVER}}
+          openshift_token: ${{env.OPENSHIFT_TOKEN}}
+          insecure_skip_tls_verify: true
+          namespace: ${{env.DEFAULT_NAMESPACE}}
+
+      # Push the image to selected repository
       - name: Push Image
         run: |
           oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}:${{ env.VERSION }}
           oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}:${{ env.VERSION }}
 
-      # 2. Edit the selcted Argo CD manifest file
+      # Edit the selected Argo CD manifest file
       # Update the image ID in the manifest repository used by Argo CD.
       # We need to use the SSH deploy key to check out the manifest repo, set up
       # Kustomize in the runner, update the image ID, commit the change, and
@@ -228,7 +237,7 @@ jobs:
           oc tag ${{ env.FRONTEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.FRONTEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}:${{ env.VERSION }}
           oc tag ${{ env.BACKEND_IMAGE_NAME }}:${{ env.VERSION }} ${{ env.OPENSHIFT_NAMESPACE }}/${{ env.BACKEND_IMAGE_NAME }}${{ env.DEPLOY_SUFFIX }}:${{ env.VERSION }}
 
-      # 2. Edit the selcted Argo CD manifest file
+      # 2. Edit the selected Argo CD manifest file
       # Update the image ID in the manifest repository used by Argo CD.
       # We need to use the SSH deploy key to check out the manifest repo, set up
       # Kustomize in the runner, update the image ID, commit the change, and
