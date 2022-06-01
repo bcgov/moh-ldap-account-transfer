@@ -47,6 +47,14 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
+    outputs:
+      VERSION: ${{env.VERSION}}
+      OPENSHIFT_NAMESPACE: ${{env.OPENSHIFT_NAMESPACE}}
+      DEPLOY_SUFFIX: ${{env.DEPLOY_SUFFIX}}
+      DEVOPS_DIR: ${{env.DEVOPS_DIR}}
+      FRONTEND_IMAGE_ID: ${{env.FRONTEND_IMAGE_ID}}
+      BACKEND_IMAGE_ID: ${{env.BACKEND_IMAGE_ID}}
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # 1. Login to OpenShift
@@ -117,9 +125,6 @@ jobs:
 
       - name: Compute Version image
         run: |
-          echo "OPENSHIFT_NAMESPACE=${{steps.set-namespace.outputs.result}}"  | tee -a $GITHUB_ENV
-          echo "DEPLOY_SUFFIX=${{steps.set-deploy-suffix.outputs.result}}"  | tee -a $GITHUB_ENV
-          echo "DEVOPS_DIR=${{steps.set-devops-dir.outputs.result}}"  | tee -a $GITHUB_ENV
           echo "VERSION=${{ env.VERSION_PREFIX }}${{ github.event.inputs.Branch }}_${{ github.event.inputs.Release }}"  | tee -a $GITHUB_ENV
 
       - name: Find image
@@ -157,7 +162,7 @@ jobs:
           echo "DEPLOY_SUFFIX=${{needs.compute.outputs.DEPLOY_SUFFIX}}"  | tee -a $GITHUB_ENV
           echo "DEVOPS_DIR=${{needs.compute.outputs.DEVOPS_DIR}}"  | tee -a $GITHUB_ENV
           echo "FRONTEND_IMAGE_ID=${{needs.compute.outputs.FRONTEND_IMAGE_ID}}"  | tee -a $GITHUB_ENV
-          echo "BACKEND_IMAGE_NAME=${{needs.compute.outputs.BACKEND_IMAGE_NAME}}"  | tee -a $GITHUB_ENV
+          echo "BACKEND_IMAGE_ID=${{needs.compute.outputs.BACKEND_IMAGE_ID}}"  | tee -a $GITHUB_ENV
 
       # 1. Push the image to selected repository
       - name: Push Image
@@ -215,7 +220,7 @@ jobs:
           echo "DEPLOY_SUFFIX=${{needs.compute.outputs.DEPLOY_SUFFIX}}"  | tee -a $GITHUB_ENV
           echo "DEVOPS_DIR=${{needs.compute.outputs.DEVOPS_DIR}}"  | tee -a $GITHUB_ENV
           echo "FRONTEND_IMAGE_ID=${{needs.compute.outputs.FRONTEND_IMAGE_ID}}"  | tee -a $GITHUB_ENV
-          echo "BACKEND_IMAGE_NAME=${{needs.compute.outputs.BACKEND_IMAGE_NAME}}"  | tee -a $GITHUB_ENV
+          echo "BACKEND_IMAGE_ID=${{needs.compute.outputs.BACKEND_IMAGE_ID}}"  | tee -a $GITHUB_ENV
 
       # 1. Push the image to selected repository
       - name: Push Image
