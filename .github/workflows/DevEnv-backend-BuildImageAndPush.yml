@@ -29,7 +29,7 @@ jobs:
       # Check out the code
       - name: Check out code
         id: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ref: ${{ github.event.inputs.branch }}
 
@@ -70,7 +70,7 @@ jobs:
           ssh-private-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
 
       - name: Check out manifest repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
           repository: ${{ secrets.GITOPS_C5839F_REPO }}
