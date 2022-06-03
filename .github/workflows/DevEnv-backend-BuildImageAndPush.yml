@@ -43,12 +43,7 @@ jobs:
       - name: Determine image tags
         if: env.IMAGE_TAGS == ''
         run: |
-          echo "IMAGE_TAGS=${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA::12}" | tee -a $GITHUB_ENV
-          echo "IMAGE_TAGS=${{ env.IMAGE_TAGS }} ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:account-transfer-dev" | tee -a $GITHUB_ENV
-          echo "IMAGE_TAGS=${{ env.IMAGE_TAGS }} ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" | tee -a $GITHUB_ENV
-          echo "IMAGE_TAGS=${{ env.IMAGE_TAGS }} ${{ env.DEVNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.DEV_SUFFIX }}:${GITHUB_SHA::12}" | tee -a $GITHUB_ENV
-          echo "IMAGE_TAGS=${{ env.IMAGE_TAGS }} ${{ env.DEVNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.DEV_SUFFIX }}:account-transfer-dev" | tee -a $GITHUB_ENV
-          echo "IMAGE_TAGS=${{ env.IMAGE_TAGS }} ${{ env.DEVNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.DEV_SUFFIX }}:${{ env.VERSION }}" | tee -a $GITHUB_ENV
+          echo "${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA::12} ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:account-transfer-dev ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} ${{ env.DEVNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.DEV_SUFFIX }}:${GITHUB_SHA::12} ${{ env.DEVNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.DEV_SUFFIX }}:account-transfer-dev ${{ env.DEVNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.DEV_SUFFIX }}:${{ env.VERSION }} " | tee -a $GITHUB_ENV
 
       # Build from docker file. Tags the build with two tags for use in the next step which pushes them to the registry. One tag for tools and one for dev. Only 'tags' are used as this allows specifying
       # the image name in each tag. This is needed because it is different in each namespace as it contains '-dev' suffix in the dev namespace. Note, with multiple tags both have the same digest value.
