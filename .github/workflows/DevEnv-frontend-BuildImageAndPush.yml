@@ -84,7 +84,7 @@ jobs:
       - name: Check out manifest repo
         uses: actions/checkout@v3
         with:
-          ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY_TEMP }}
+          ssh-key: ${{ secrets.GITOPS_C5839F_PRIVATE_KEY }}
           repository: ${{ secrets.GITOPS_C5839F_REPO }}
           ref: main
 
