@@ -58,7 +58,7 @@ jobs:
       - name: Determine image tags
         if: env.IMAGE_TAGS == ''
         run: |
-          echo "IMAGE_TAGS=${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA::12} ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:account-transfer-test ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:latest ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:${GITHUB_SHA::12} ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:account-transfer-test ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}${{ env.VERSION }}" | tee -a $GITHUB_ENV
+          echo "IMAGE_TAGS=${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA::12} ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:account-transfer-test ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:latest ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:${GITHUB_SHA::12} ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:account-transfer-test ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:${{ env.VERSION }}" | tee -a $GITHUB_ENV
 
       # Build from docker file
       - name: Build from Dockerfile
