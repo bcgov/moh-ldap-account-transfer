@@ -46,11 +46,11 @@ jobs:
         with:
           ref: 6148-Create-Actions-for-User-Transfer-deployment
 
-      # 1. Determine the version number tag i.e. Release_1.0_<branch-name>_<build execution>
+      # 1. Determine the version number tag i.e. release_1.0_<branch-name>_<build execution>
       - name: Determine Version number
         # Branch name is fixed to 'main' in version identifier
         run: |
-          echo "RELEASE_VERSION=Release_1.0_main_${{github.run_number}}" | tee -a $GITHUB_ENV
+          echo "RELEASE_VERSION=release_1.0_main_${{github.run_number}}" | tee -a $GITHUB_ENV
 
       # 2. Determine tags for OpenShift image
       - name: Determine image tags

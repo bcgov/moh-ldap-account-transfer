@@ -40,11 +40,11 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
-      # Determine the version number tag i.e. Test_AutoBuild_<branch-name>_<build execution>
+      # Determine the version number tag i.e. test_auto_build_<branch-name>_<build execution>
       - name: Determine Version number
         # Branch name is fixed to 'main' in version identifier
         run: |
-          echo "VERSION=Test_AutoBuild_main_${{github.run_number}}" | tee -a $GITHUB_ENV
+          echo "VERSION=test_auto_build_main_${{github.run_number}}" | tee -a $GITHUB_ENV
 
       # Determine the tags. Create all tags with full names. Only 'tags' are used as this allows specifying
       # the image name in each tag. This is needed because it is different in each namespace as it contains '-test' suffix in the test namespace.
