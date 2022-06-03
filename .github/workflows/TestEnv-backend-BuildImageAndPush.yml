@@ -40,13 +40,27 @@ jobs:
         with:
           ref: ${{ github.event.inputs.branch }}
 
+      # Determine the version number tag i.e. Test_AutoBuild_<branch-name>_<build execution>
+      - name: Determine Version number
+        # Branch name is fixed to 'main' in version identifier
+        run: |
+          echo "VERSION=Test_AutoBuild_main_${{github.run_number}}" | tee -a $GITHUB_ENV
+
       # Determine the tags. Create all tags with full names. Only 'tags' are used as this allows specifying
       # the image name in each tag. This is needed because it is different in each namespace as it contains '-test' suffix in the test namespace.
       # Note, with multiple tags all have the same digest value.
       - name: Determine image tags
         if: env.IMAGE_TAGS == ''
         run: |
-          echo "IMAGE_TAGS=${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA::12} ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:account-transfer-test ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:latest ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:${GITHUB_SHA::12} ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:account-transfer-test" | tee -a $GITHUB_ENV
+          echo "IMAGE_TAGS=${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:latest 
+                           ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${GITHUB_SHA::12} 
+                           ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:account-transfer-test 
+                           ${{ env.TOOLSNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}:${{ env.VERSION }} 
+                           ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:latest 
+                           ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:${GITHUB_SHA::12} 
+                           ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}:account-transfer-test 
+                           ${{ env.TESTNS_IMAGE_REGISTRY }}/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}${{ env.VERSION }} " 
+                           | tee -a $GITHUB_ENV
 
       # Build from docker file.
       - name: Build from Dockerfile
@@ -94,5 +108,5 @@ jobs:
           kustomize edit set image "backend-image=image-registry.openshift-image-registry.svc:5000/c5839f-test/${{ env.IMAGE_NAME }}${{ env.TEST_SUFFIX }}@${{ steps.push-images.outputs.digest }}"
           git config --local user.email "action@github.com"
           git config --local user.name "GitHub Action"
-          git commit -am "Update Backend API image ID for test"
+          git commit -am "Deploying build: ${{ env.VERSION }} in test using TestEnv-backend-BuildImageAndPush workflow."
           git push origin
