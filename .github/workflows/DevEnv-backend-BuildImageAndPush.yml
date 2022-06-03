@@ -20,7 +20,7 @@ on:
       branch:
         description: "Enter branch name:"
         required: true
-        default: 6148-Create-Actions-for-User-Transfer-deployment
+        default: main
 jobs:
   buildAndPush:
     runs-on: ubuntu-latest

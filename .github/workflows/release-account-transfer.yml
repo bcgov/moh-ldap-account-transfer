@@ -44,7 +44,7 @@ jobs:
         id: checkout
         uses: actions/checkout@v3
         with:
-          ref: 6148-Create-Actions-for-User-Transfer-deployment
+          ref: main
 
       # 1. Determine the version number tag i.e. release_1.0_<branch-name>_<build execution>
       - name: Determine Version number
