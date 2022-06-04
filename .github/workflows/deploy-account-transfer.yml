@@ -74,7 +74,7 @@ jobs:
             if (`${{ github.event.inputs.Environment }}` == 'dev') {
               return "c5839f-dev"
             }
-            if (`${{ github.event.inputs.Environment }}` == 'test' || `${{ github.event.inputs.Environment }}` == 'uat') {
+            if (`${{ github.event.inputs.Environment }}` == 'test' ) {
               return "c5839f-test"
             }
             if (`${{ github.event.inputs.Environment }}` == 'production') {
@@ -92,9 +92,6 @@ jobs:
             if (`${{ github.event.inputs.Environment }}` == 'test') {
               return "-test"
             } 
-            if ( `${{ github.event.inputs.Environment }}` == 'uat') {
-              return "-uat"
-            }
             if (`${{ github.event.inputs.Environment }}` == 'production') {
               return ""
             }
@@ -110,9 +107,6 @@ jobs:
             if (`${{ github.event.inputs.Environment }}` == 'test') {
               return "test"
             } 
-            if ( `${{ github.event.inputs.Environment }}` == 'uat') {
-              return "uat"
-            }
             if (`${{ github.event.inputs.Environment }}` == 'production') {
               return "prod"
             }
