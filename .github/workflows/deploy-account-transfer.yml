@@ -30,7 +30,6 @@ on:
         options:
           - dev
           - test
-          - uat
           - production
       Branch:
         description: "Enter branch name (Currently deployable releases are created only from main )"
