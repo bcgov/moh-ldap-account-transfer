@@ -14,7 +14,7 @@ env:
   FRONTEND_IMAGE_NAME: account-transfer-frontend
   BACKEND_IMAGE_NAME: account-transfer-backend
   DEFAULT_NAMESPACE: "c5839f-tools"
-  VERSION_PREFIX: "Release_1.0_"
+  VERSION_PREFIX: "release_1.0_"
   OPENSHIFT_NAMESPACE:
   FRONTEND_IMAGE_ID:
   BACKEND_IMAGE_ID:
