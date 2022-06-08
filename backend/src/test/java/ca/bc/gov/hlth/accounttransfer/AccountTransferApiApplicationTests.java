@@ -10,7 +10,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -39,7 +38,6 @@ class AccountTransferApiApplicationTests {
 	    public WebClient userManagementWebClient() {
 	        return WebClient.builder()
 	                .baseUrl(String.format("http://localhost:%s", mockBackEnd.getPort()))
-	                .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
 	                .build();
 	    }
 	}
