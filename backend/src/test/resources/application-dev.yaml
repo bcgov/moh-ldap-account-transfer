@@ -1,0 +1,31 @@
+keycloak:
+  base-oauth-url: https://common-logon-dev.hlth.gov.bc.ca/auth/realms/moh_applications
+ldap:
+  base-url: 
+user-management:
+  url:
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          keycloak:
+            client-id: test
+            client-secret: 123
+            authorization-grant-type: client_credentials
+            scope:
+              - openid
+        provider:
+          keycloak:
+            authorization-url: ${keycloak.base-oauth-url}/test
+            token-uri: ${keycloak.base-oauth-url}/test
+  main:
+    allow-bean-definition-overriding: true
+
+config:
+  # CORS
+  allowed-origins: http://localhost:3000
+
+server:
+  port: 9090
+  forward-headers-strategy: NATIVE
