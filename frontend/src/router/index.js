@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 import Confirmation from './../views/Confirmation.vue'
 import Home from './../views/Home.vue'
+import Notification from './../views/Notification.vue'
 
 const routes = [
   {
@@ -13,6 +14,11 @@ const routes = [
     path: '/confirmation',
     name: 'Confirmation',
     component: Confirmation,
+  },
+  {
+    path: '/notification',
+    name: 'Notification',
+    component: Notification,
   },
 ]
 

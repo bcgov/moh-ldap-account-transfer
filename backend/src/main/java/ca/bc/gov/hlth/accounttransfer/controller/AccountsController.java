@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.validation.Valid;
 
@@ -46,7 +47,9 @@ public class AccountsController {
 	private static final String MSPDIRECT = "MSPDIRECT-SERVICE";
 	private static final String SUB_CLAIM = "sub";
 	private static final String ATTRIBUTE_ORG_DETAILS = "org_details";
-	
+	private static final String ATTRIBUTE_ROLES = "roles";
+	private static final String CLAIM_RESOURCE_ACCESS = "resource_access";
+
 	private static final String ERROR_INVALID_USER_PASS = "Invalid Username or Password";
 	private static final String ERROR_ACCOUNT_LOCKED = "Account is locked";
 	private static final String ERROR_NO_ROLE = "User has no role";
@@ -68,15 +71,20 @@ public class AccountsController {
 	 * @return The result of the operation
 	 */
 	@PostMapping("/accountTransfer")
-	public ResponseEntity<AccountTransferResponse> transferAccount(@Valid @RequestBody AccountTransferRequest accountTransferRequest) {
+	public ResponseEntity<AccountTransferResponse> transferAccount(
+			@Valid @RequestBody AccountTransferRequest accountTransferRequest) {
 
 		Jwt authToken = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		String userId = authToken.getClaimAsString(SUB_CLAIM);
+		List<String> kcRole = loadRoles(authToken);
+		boolean isRoleAlreadyTransferred = false;
+		boolean isOrgAlreadyTranseferred = false;
 
 		logger.debug("Attempting account transfer for User {} on Application {}", accountTransferRequest.getUsername(),
 				accountTransferRequest.getApplication());
 
-		LdapRequest ldapRequest = new LdapRequest(accountTransferRequest.getUsername(), accountTransferRequest.getPassword());
+		LdapRequest ldapRequest = new LdapRequest(accountTransferRequest.getUsername(),
+				accountTransferRequest.getPassword());
 		LdapResponse ldapResponse = ldapService.checkLdapAccount(ldapRequest);
 
 		String errorMessage = validateLdapResponse(ldapResponse);
@@ -91,42 +99,68 @@ public class AccountsController {
 
 			logger.debug("User has role {}", ldapResponse.getMspDirectRole().toUpperCase());
 
-			String idOfClient = clientsLookup.getClients().get(MSPDIRECT).getId();
-			Object roleRepresentation = clientsLookup.getClients().get(MSPDIRECT).getRoles()
-					.get(ldapResponse.getMspDirectRole().toUpperCase());
+			// Assign only if role not exists in KC for the user
+			if (!roleExists(kcRole, ldapResponse.getMspDirectRole().toUpperCase())) {
 
-			// If ldapResponse.mspDirectRole is not supported in the new MSP Direct -> role
-			// is invalid
-			if (roleRepresentation == null) {
-				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
-						String.format("%s is not a valid %s role", ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
-				return ResponseEntity.ok(response);
-			}
+				String idOfClient = clientsLookup.getClients().get(MSPDIRECT).getId();
+				Object roleRepresentation = clientsLookup.getClients().get(MSPDIRECT).getRoles()
+						.get(ldapResponse.getMspDirectRole().toUpperCase());
 
-			// Keycloak expects the representation of roles to add in an array
-			Object[] rolesToSend = { roleRepresentation };
+				// If ldapResponse.mspDirectRole is not supported in the new MSP Direct -> role
+				// is invalid
+				if (roleRepresentation == null) {
+					AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String.format(
+							"%s is not a valid %s role", ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
+					return ResponseEntity.ok(response);
+				}
+				// Keycloak expects the representation of roles to add in an array
+				Object[] rolesToSend = { roleRepresentation };
 
-			ResponseEntity<String> kcResponse = keycloakUserManagementService.addRoleToUser(userId, idOfClient, rolesToSend);
-			if (kcResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
-				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String
-						.format("Error transferring role %s for application %s", ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
-				return ResponseEntity.ok(response);
+				ResponseEntity<String> kcResponse = keycloakUserManagementService.addRoleToUser(userId, idOfClient,
+						rolesToSend);
+				if (kcResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
+					AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
+							String.format("Error transferring role %s for application %s",
+									ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
+					return ResponseEntity.ok(response);
+				}
+			} else {
+				isRoleAlreadyTransferred = true;
+				logger.info(String.format("%s role is already assigned to user ",
+						ldapResponse.getMspDirectRole().toUpperCase()));
 			}
 
 			// If the role transfer was successful, transfer the Organization as well
 			Boolean transferError = Boolean.FALSE;
 			try {
-				transferOrganization(userId, ldapResponse.getOrgDetails());	
+				if (!transferOrganization(userId, ldapResponse.getOrgDetails())) {
+					isOrgAlreadyTranseferred = true;
+				} else {
+					isOrgAlreadyTranseferred = false;
+				}
 			} catch (AccountTransferException e) {
 				logger.error(e.getMessage());
 				transferError = Boolean.TRUE;
 			}
-						
+
+			if (Boolean.TRUE.equals(isRoleAlreadyTransferred && Boolean.TRUE.equals(isOrgAlreadyTranseferred))) {
+				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS,
+						String.format("Account already transferred for the role %s for application %s",
+								ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
+				return ResponseEntity.ok(response);
+			} else if (Boolean.TRUE.equals(isRoleAlreadyTransferred || Boolean.TRUE.equals(isOrgAlreadyTranseferred))) {
+				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS,
+						String.format("Account partially transeferred for the role %s for application %s",
+								ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
+				return ResponseEntity.ok(response);
+			}
+
 			StringBuilder sb = new StringBuilder();
 			sb.append(String.format("Account transfer successful for user %s for the application %s with the role %s",
 					accountTransferRequest.getUsername(), MSPDIRECT, ldapResponse.getMspDirectRole().toUpperCase()));
 			if (Boolean.TRUE.equals(transferError)) {
-				sb.append("\nNote: Organization transfer failed. Please contact support to have your organization set up manually.");
+				sb.append(
+						"\nNote: Organization transfer failed. Please contact support to have your organization set up manually.");
 			}
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS, sb.toString(),
 					ldapResponse.getMspDirectRole().toUpperCase());
@@ -143,27 +177,28 @@ public class AccountsController {
 	/**
 	 * Transfers the users Organization from LDAP to Keycloak.
 	 * 
-	 * @param userId The Keycloak userId
+	 * @param userId  The Keycloak userId
 	 * @param ldapOrg The organization in LDAP.
-	 * @throws AccountTransferException 
+	 * @throws AccountTransferException
 	 */
-	private void transferOrganization(String userId, OrgDetails ldapOrg) throws AccountTransferException {
+	private boolean transferOrganization(String userId, OrgDetails ldapOrg) throws AccountTransferException {
 		// Look up the user in Keycloak/UMS
 		ResponseEntity<User> getUserResponse = keycloakUserManagementService.getUser(userId);
+
 		if (getUserResponse.getStatusCode() != HttpStatus.OK) {
 			throw new AccountTransferException(String.format("Could not get User info for user %s", userId));
 		}
 		User user = getUserResponse.getBody();
-		
+
 		// Check if the org is already assigned
 		List<String> orgDetails = loadOrgDetails(user);
 		if (organizationExists(orgDetails, ldapOrg)) {
 			logger.debug("Organization {} is already assigned to User {}", ldapOrg.getId(), user.getUsername());
-			return;
-		}			
+			return false;
+		}
 
 		// Transfer the organization
-		ObjectMapper mapper  = new ObjectMapper();
+		ObjectMapper mapper = new ObjectMapper();
 		try {
 			String newOrg = mapper.writeValueAsString(ldapOrg);
 			orgDetails.add(newOrg);
@@ -174,51 +209,78 @@ public class AccountsController {
 		// Update the user in Keycloak/UMS
 		ResponseEntity<String> updateUserResponse = keycloakUserManagementService.updateUser(userId, user);
 		if (updateUserResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
-			throw new AccountTransferException(String.format("Error adding organization %s to user %s", ldapOrg.getId(), user.getUsername()));
+			throw new AccountTransferException(
+					String.format("Error adding organization %s to user %s", ldapOrg.getId(), user.getUsername()));
 		}
-		
+
 		logger.debug("Organization {} assigned to User {}", ldapOrg.getId(), user.getUsername());
+		return true;
 	}
+
 	
-	/**
-	 * Loads the orgDetails from the User. Creates the necessary structure if it doesn't exist.
-	 * 
-	 * @param user The keycloak user
-	 * @return The user's orgDetails
-	 */
 	@SuppressWarnings("unchecked")
 	private List<String> loadOrgDetails(User user) {
 		if (user.getAttributes() == null) {
 			HashMap<String, Object> attributes = new LinkedHashMap<>();
 			user.setAttributes(attributes);
 		}
-		
+
 		// Check if the org is already assigned
-		HashMap<String, Object> attributes = (HashMap<String, Object>)user.getAttributes();
-		List<String> orgDetails = (List<String>)attributes.get(ATTRIBUTE_ORG_DETAILS);
+		HashMap<String, Object> attributes = (HashMap<String, Object>) user.getAttributes();
+		List<String> orgDetails = (List<String>) attributes.get(ATTRIBUTE_ORG_DETAILS);
 		if (orgDetails == null) {
 			orgDetails = new ArrayList<>();
 			attributes.put(ATTRIBUTE_ORG_DETAILS, orgDetails);
 		}
-		
+
 		return orgDetails;
 	}
-	
+
+	@SuppressWarnings("unchecked")
+	private static List<String> loadRoles(Jwt jwt) {
+		List<String> permissions = new ArrayList<>();
+
+		Map<String, Object> resourceAccesses = (Map<String, Object>) jwt.getClaims().get(CLAIM_RESOURCE_ACCESS);
+
+		if (resourceAccesses == null) {
+			return permissions;
+		}
+
+		Map<String, Object> resource = (Map<String, Object>) resourceAccesses.get(MSPDIRECT);
+		if (resource == null) {
+			return permissions;
+		}
+
+		return (List<String>) resource.get(ATTRIBUTE_ROLES);
+	}
+
+	/**
+	 * Checks if the LDAP role exists on the Keycloak user.
+	 * 
+	 * @param kcRole   The role from Keycloak
+	 * @param ldapRole The LDAP role
+	 * @return True if the role already exists
+	 */
+	private Boolean roleExists(List<String> kcRole, String ldapRole) {
+		return kcRole.contains(ldapRole);
+
+	}
+
 	/**
 	 * Checks if the LDAP organization exists on the Keycloak user.
 	 * 
-	 * @param kcOrgs The orgs from Keycloak
+	 * @param kcOrgs  The orgs from Keycloak
 	 * @param ldapOrg The LDAP organization
 	 * @return True if the organization already exists
 	 */
-	private Boolean organizationExists(List<String> kcOrgs , OrgDetails ldapOrg) {
-		ObjectMapper mapper  = new ObjectMapper();
-		for (String org: kcOrgs) {
+	private Boolean organizationExists(List<String> kcOrgs, OrgDetails ldapOrg) {
+		ObjectMapper mapper = new ObjectMapper();
+		for (String org : kcOrgs) {
 			try {
 				OrgDetails kcOrg = mapper.readValue(org, OrgDetails.class);
 				if (kcOrg.equals(ldapOrg)) {
 					return Boolean.TRUE;
-				}			
+				}
 			} catch (JsonProcessingException e) {
 				// This is unlikely. Just log and move on.
 				logger.error(e.getMessage());
@@ -238,7 +300,8 @@ public class AccountsController {
 		if (StringUtils.isEmpty(ldapResponse.getUserName())) {
 			return ERROR_INVALID_USER_PASS;
 		}
-		// If ldapResponse.authenticated == false -> error user put in the wrong password
+		// If ldapResponse.authenticated == false -> error user put in the wrong
+		// password
 		if (!ldapResponse.getAuthenticated()) {
 			if (ldapResponse.getUnlocked()) {
 				return ERROR_INVALID_USER_PASS;
@@ -247,7 +310,8 @@ public class AccountsController {
 				return ERROR_ACCOUNT_LOCKED;
 			}
 		}
-		// If ldapResponse.mspDirectRole = '' -> error user doesn't actually have the role
+		// If ldapResponse.mspDirectRole = '' -> error user doesn't actually have the
+		// role
 		if (StringUtils.isBlank(ldapResponse.getMspDirectRole())) {
 			return ERROR_NO_ROLE;
 		}

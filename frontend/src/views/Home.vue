@@ -86,7 +86,8 @@ export default {
           const errorMessage = responseBody.message
           let additionalInfo = ''
           if (errorMessage.startsWith('Invalid Username')) {
-            additionalInfo = 'If you forgot your password please try the following link: <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">https://healthnetbc.hlth.gov.bc.ca/?resetPassword</a><br/>If you are still having trouble, please contact the helpdesk at <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
+            additionalInfo =
+              'If you forgot your password please try the following link: <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">https://healthnetbc.hlth.gov.bc.ca/?resetPassword</a><br/>If you are still having trouble, please contact the helpdesk at <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
           } else if (errorMessage.startsWith('User has no role')) {
             additionalInfo = 'Please contact your access administrator to confirm your access to MSP Direct'
           } else {
@@ -95,10 +96,19 @@ export default {
           this.showError(errorMessage, additionalInfo)
           this.clearUserPass()
         }
-        // Navigate to the Confirmation page on success
-        if (responseBody.status == 'success') {
-          this.alertStore.setSuccessAlert(responseBody.message)
-          this.$router.push({ name: 'Confirmation' })
+        // Navigate to the Notification page if account already exists
+        if (responseBody.status === 'success') {
+          const successMessage = responseBody.message
+          if (successMessage.startsWith('Account already transferred')) {
+            this.$router.push({
+              name: 'Notification',
+              params: { data: successMessage },
+            })
+          } else {
+            //Navigate to the Confirmation
+            this.alertStore.setSuccessAlert(responseBody.message)
+            this.$router.push({ name: 'Confirmation' })
+          }
         }
       } catch (error) {
         this.showError(error)
