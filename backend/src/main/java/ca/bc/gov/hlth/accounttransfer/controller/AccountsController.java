@@ -72,8 +72,7 @@ public class AccountsController {
 	 * @return The result of the operation
 	 */
 	@PostMapping("/accountTransfer")
-	public ResponseEntity<AccountTransferResponse> transferAccount(
-			@Valid @RequestBody AccountTransferRequest accountTransferRequest) {
+	public ResponseEntity<AccountTransferResponse> transferAccount(@Valid @RequestBody AccountTransferRequest accountTransferRequest) {
 
 		Jwt authToken = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		String userId = authToken.getClaimAsString(SUB_CLAIM);
@@ -82,8 +81,7 @@ public class AccountsController {
 		logger.debug("Attempting account transfer for User {} on Application {}", accountTransferRequest.getUsername(),
 				accountTransferRequest.getApplication());
 
-		LdapRequest ldapRequest = new LdapRequest(accountTransferRequest.getUsername(),
-				accountTransferRequest.getPassword());
+		LdapRequest ldapRequest = new LdapRequest(accountTransferRequest.getUsername(), accountTransferRequest.getPassword());
 		LdapResponse ldapResponse = ldapService.checkLdapAccount(ldapRequest);
 
 		String errorMessage = validateLdapResponse(ldapResponse);
@@ -122,20 +120,18 @@ public class AccountsController {
 			// If ldapResponse.mspDirectRole is not supported in the new MSP Direct -> role
 			// is invalid
 			if (roleRepresentation == null) {
-				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String
-						.format("%s is not a valid %s role", ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
+				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
+						String.format("%s is not a valid %s role", ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
 				return ResponseEntity.ok(response);
 			}
 
 			// Keycloak expects the representation of roles to add in an array
 			Object[] rolesToSend = { roleRepresentation };
 
-			ResponseEntity<String> kcResponse = keycloakUserManagementService.addRoleToUser(userId, idOfClient,
-					rolesToSend);
+			ResponseEntity<String> kcResponse = keycloakUserManagementService.addRoleToUser(userId, idOfClient, rolesToSend);
 			if (kcResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
-				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
-						String.format("Error transferring role %s for application %s",
-								ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
+				AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String
+						.format("Error transferring role %s for application %s", ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
 				return ResponseEntity.ok(response);
 			}
 
@@ -155,8 +151,7 @@ public class AccountsController {
 			sb.append(String.format("Account transfer successful for user %s for the application %s with the role %s",
 					accountTransferRequest.getUsername(), MSPDIRECT, ldapResponse.getMspDirectRole().toUpperCase()));
 			if (Boolean.TRUE.equals(transferError)) {
-				sb.append(
-						"\nNote: Organization transfer failed. Please contact support to have your organization set up manually.");
+				sb.append("\nNote: Organization transfer failed. Please contact support to have your organization set up manually.");
 			}
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.SUCCESS, sb.toString(),
 					ldapResponse.getMspDirectRole().toUpperCase());
@@ -178,8 +173,7 @@ public class AccountsController {
 	 * @param ldapResponse
 	 * @throws AccountTransferException
 	 */
-	private void addOldLdapId(String userId, List<String> kcLdapId, LdapResponse ldapResponse)
-			throws AccountTransferException {
+	private void addOldLdapId(String userId, List<String> kcLdapId, LdapResponse ldapResponse) throws AccountTransferException {
 		String ldapUser = ldapResponse.getUserName();
 		UserDetails userDetails = createLdapUser(ldapUser);
 
@@ -194,8 +188,8 @@ public class AccountsController {
 		// Update the user in Keycloak/UMS
 		ResponseEntity<String> updateUserResponse = keycloakUserManagementService.updateUser(userId, user);
 		if (updateUserResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
-			throw new AccountTransferException(String.format("Error adding old ldap id %s to user %s",
-					ldapResponse.getUserName(), user.getUsername()));
+			throw new AccountTransferException(
+					String.format("Error adding old ldap id %s to user %s", ldapResponse.getUserName(), user.getUsername()));
 		}
 	}
 
