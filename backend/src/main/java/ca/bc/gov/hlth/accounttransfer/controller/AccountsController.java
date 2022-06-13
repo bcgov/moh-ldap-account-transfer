@@ -341,10 +341,10 @@ public class AccountsController {
 		}
 		return Boolean.FALSE;
 	}
-	
 
 	/**
-	 * creates LDAP user model 
+	 * creates LDAP user model
+	 * 
 	 * @param ldapUser
 	 * @return
 	 */
@@ -357,7 +357,6 @@ public class AccountsController {
 		userDetails.setOrg(org);
 		return userDetails;
 	}
-
 
 	/**
 	 * Validates that the LDAP response doesn't have any error conditions.
