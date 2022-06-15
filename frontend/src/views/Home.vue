@@ -43,6 +43,7 @@ import { useAlertStore } from '../stores/alert'
 import { required } from '@vuelidate/validators'
 import AppErrorPanel from '../components/ui/AppErrorPanel.vue'
 import AccountTransferService from '../services/AccountTransferService'
+import keycloak from '../keycloak'
 
 export default {
   name: 'home',
@@ -64,6 +65,17 @@ export default {
       additionalInfo: '',
     }
   },
+  created() {
+    //console.log(JSON.parse(JSON.stringify(keycloak.tokenParsed)))
+    JSON.parse(JSON.stringify(keycloak.tokenParsed.resource_access), (key, value) => {
+      if (key === 'roles' && value.length !== 0) {
+        this.$router.push({
+          name: 'Notification',
+        })
+      }
+    })
+  },
+
   methods: {
     async submitForm() {
       this.displayError = false
@@ -96,19 +108,10 @@ export default {
           this.showError(errorMessage, additionalInfo)
           this.clearUserPass()
         }
-        // Navigate to the Notification page if account already exists
         if (responseBody.status === 'success') {
-          const successMessage = responseBody.message
-          if (successMessage.startsWith('Account already transferred')) {
-            this.$router.push({
-              name: 'Notification',
-              params: { data: successMessage },
-            })
-          } else {
-            //Navigate to the Confirmation
-            this.alertStore.setSuccessAlert(responseBody.message)
-            this.$router.push({ name: 'Confirmation' })
-          }
+          //Navigate to the Confirmation
+          this.alertStore.setSuccessAlert(responseBody.message)
+          this.$router.push({ name: 'Confirmation' })
         }
       } catch (error) {
         this.showError(error)

@@ -1,14 +1,16 @@
 <template>
   <section>
     <h1>MSP Direct Account Transfer</h1>
+    <h2>You have already transferred your account to MSP Direct</h2>
+    <br />
+    <p>Use the following link to go to the application</p>
+    <AppRow>
+      <AppButton @click="goToMSP" mode="secondary" type="button">MSP Direct</AppButton>
+    </AppRow>
+    <br />
     <p>
-      Cannot Transfer. Your MSP Direct Account has Already been transeferd.<br />
-      Going forward you will login to MSP Direct with your {{ identityProvider }} credential.{{ notificationMessage }}
-    </p>
-    <p>
-      Clicking the link will take you to MSP Direct: <a :href="mspDirectURL" target="_blank">{{ mspDirectURL }}</a
+      If you are experiencing access issues, please contact the Ministry HelpDesk : <a :href="helpDeskDirectURL" target="_blank">{{ helpDeskDirectURL }}</a
       ><br />
-      You may wish to bookmark this link for future use.
     </p>
   </section>
 </template>
@@ -17,21 +19,13 @@
 export default {
   name: 'notification',
   computed: {
-    identityProvider() {
-      const idp = this.$keycloak.tokenParsed.identity_provider
-      // The IDP alias in keycloak doesn't always match what's known by users
-      // Formatted to match standard naming conventions
-      let formattedIdentityProviders = {
-        phsa: 'Health Authority',
-        idir: 'IDIR',
-        bceid_business: 'Business BCeID',
-        bcsc: 'BC Services Card',
-        moh_idp: 'Keycloak',
-      }
-      return formattedIdentityProviders[idp] || idp
+    helpDeskDirectURL() {
+      return config.MSP_DIRECT_URL || import.meta.env.VITE_HELPDESK_URL
     },
-    mspDirectURL() {
-      return config.MSP_DIRECT_URL || import.meta.env.VITE_MSP_DIRECT_URL
+  },
+  methods: {
+    goToMSP() {
+      window.location.href = config.MSP_DIRECT_URL || import.meta.env.VITE_MSP_DIRECT_URL
     },
     notificationMessage() {
       return this.$route.params.data
