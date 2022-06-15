@@ -74,9 +74,7 @@ public class AccountsController {
 
 		Jwt authToken = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		String userId = authToken.getClaimAsString(SUB_CLAIM);
-		Boolean transferError = Boolean.FALSE;
-		List<String> kcOldLdapId = new ArrayList<>();
-
+		
 		logger.debug("Attempting account transfer for User {} on Application {}", accountTransferRequest.getUsername(),
 				accountTransferRequest.getApplication());
 
@@ -101,7 +99,7 @@ public class AccountsController {
 
 		User user = getUserResponse.getBody();
 		// load LdapId from keycloak
-		kcOldLdapId = loadLdapId(user);
+		List<String> kcOldLdapId = loadLdapId(user);
 
 		// Check if LDAP user id already exists
 		UserDetails ldapUserDetails = createLdapUser(ldapResponse.getUserName());
@@ -143,7 +141,7 @@ public class AccountsController {
 			}
 
 			// If the role transfer was successful, transfer the Organization as well
-
+			Boolean transferError = Boolean.FALSE;
 			try {
 				transferOrganization(userId, ldapResponse.getOrgDetails(), user, ldapUserDetails);
 
