@@ -66,14 +66,26 @@ export default {
     }
   },
   created() {
-    //console.log(JSON.parse(JSON.stringify(keycloak.tokenParsed)))
+    var org_details = keycloak.tokenParsed.hasOwnProperty('org_details')
+    var old_ldap_id = keycloak.tokenParsed.hasOwnProperty('old_ldap_id')
+    var roleExist = false
+
     JSON.parse(JSON.stringify(keycloak.tokenParsed.resource_access), (key, value) => {
-      if (key === 'roles' && value.length !== 0) {
-        this.$router.push({
-          name: 'Notification',
-        })
-      }
+      if (!org_details)
+        if (key === 'roles' && value.length !== 0) {
+          roleExist = true
+        }
     })
+
+    if (old_ldap_id) {
+      this.$router.push({
+        name: 'Notification',
+      })
+    }
+
+    if ((roleExist && !org_details) || (!roleExist && org_details)) {
+      this.alertStore.setWarningAlert('Your MSP Direct Account has been partially transferred')
+    }
   },
 
   methods: {
