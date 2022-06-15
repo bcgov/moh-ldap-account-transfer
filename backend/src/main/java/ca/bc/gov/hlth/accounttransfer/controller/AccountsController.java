@@ -30,6 +30,7 @@ import ca.bc.gov.hlth.accounttransfer.model.keycloak.User;
 import ca.bc.gov.hlth.accounttransfer.model.ldap.LdapRequest;
 import ca.bc.gov.hlth.accounttransfer.model.ldap.LdapResponse;
 import ca.bc.gov.hlth.accounttransfer.model.ldap.OrgDetails;
+import ca.bc.gov.hlth.accounttransfer.model.ldap.UserDetails;
 import ca.bc.gov.hlth.accounttransfer.service.KeycloakUserManagementService;
 import ca.bc.gov.hlth.accounttransfer.service.LdapService;
 import ca.bc.gov.hlth.accounttransfer.util.keycloak.ClientsLookup;
@@ -46,7 +47,8 @@ public class AccountsController {
 	private static final String MSPDIRECT = "MSPDIRECT-SERVICE";
 	private static final String SUB_CLAIM = "sub";
 	private static final String ATTRIBUTE_ORG_DETAILS = "org_details";
-	
+	private static final String ATTRIBUTE_OLD_LDAP_ID = "old_ldap_id";
+
 	private static final String ERROR_INVALID_USER_PASS = "Invalid Username or Password";
 	private static final String ERROR_ACCOUNT_LOCKED = "Account is locked";
 	private static final String ERROR_NO_ROLE = "User has no role";
@@ -72,7 +74,7 @@ public class AccountsController {
 
 		Jwt authToken = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		String userId = authToken.getClaimAsString(SUB_CLAIM);
-
+		
 		logger.debug("Attempting account transfer for User {} on Application {}", accountTransferRequest.getUsername(),
 				accountTransferRequest.getApplication());
 
@@ -82,6 +84,31 @@ public class AccountsController {
 		String errorMessage = validateLdapResponse(ldapResponse);
 		if (StringUtils.isNotBlank(errorMessage)) {
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, errorMessage);
+			return ResponseEntity.ok(response);
+		}
+
+		// Look up the user in Keycloak/UMS
+		ResponseEntity<User> getUserResponse = keycloakUserManagementService.getUser(userId);
+		if (getUserResponse.getStatusCode() != HttpStatus.OK) {
+
+			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
+					String.format("Could not get User info for user %s", userId));
+			return ResponseEntity.ok(response);
+
+		}
+
+		User user = getUserResponse.getBody();
+		// load LdapId from keycloak
+		List<String> kcOldLdapId = loadLdapId(user);
+
+		// Check if LDAP user id already exists
+		UserDetails ldapUserDetails = createLdapUser(ldapResponse.getUserName());
+		boolean oldLdapIdExists = ldapIdExists(kcOldLdapId, ldapResponse.getUserName(), ldapUserDetails);
+
+		if (oldLdapIdExists) {
+			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
+					String.format("Account already transferred for the role %s and application %s",
+							ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
 			return ResponseEntity.ok(response);
 		}
 
@@ -116,12 +143,13 @@ public class AccountsController {
 			// If the role transfer was successful, transfer the Organization as well
 			Boolean transferError = Boolean.FALSE;
 			try {
-				transferOrganization(userId, ldapResponse.getOrgDetails());	
+				transferOrganization(userId, ldapResponse.getOrgDetails(), user, ldapUserDetails);
+
 			} catch (AccountTransferException e) {
 				logger.error(e.getMessage());
 				transferError = Boolean.TRUE;
 			}
-						
+
 			StringBuilder sb = new StringBuilder();
 			sb.append(String.format("Account transfer successful for user %s for the application %s with the role %s",
 					accountTransferRequest.getUsername(), MSPDIRECT, ldapResponse.getMspDirectRole().toUpperCase()));
@@ -141,45 +169,47 @@ public class AccountsController {
 	}
 
 	/**
-	 * Transfers the users Organization from LDAP to Keycloak.
+	 * Transfers the users Organization and User Id from LDAP to Keycloak.
 	 * 
 	 * @param userId The Keycloak userId
-	 * @param ldapOrg The organization in LDAP.
-	 * @throws AccountTransferException 
+	 * @param ldapOrg The LDAP org
+	 * @param user The Keycloak user
+	 * @param userDetails The LDAP userDetails
+	 * @throws AccountTransferException
 	 */
-	private void transferOrganization(String userId, OrgDetails ldapOrg) throws AccountTransferException {
-		// Look up the user in Keycloak/UMS
-		ResponseEntity<User> getUserResponse = keycloakUserManagementService.getUser(userId);
-		if (getUserResponse.getStatusCode() != HttpStatus.OK) {
-			throw new AccountTransferException(String.format("Could not get User info for user %s", userId));
-		}
-		User user = getUserResponse.getBody();
-		
+	private void transferOrganization(String userId, OrgDetails ldapOrg, User user, UserDetails userDetails)
+			throws AccountTransferException {
 		// Check if the org is already assigned
 		List<String> orgDetails = loadOrgDetails(user);
 		if (organizationExists(orgDetails, ldapOrg)) {
 			logger.debug("Organization {} is already assigned to User {}", ldapOrg.getId(), user.getUsername());
 			return;
-		}			
+		}
 
-		// Transfer the organization
-		ObjectMapper mapper  = new ObjectMapper();
+		List<String> ldapId = loadLdapId(user);
+
+		// Transfer the organization and ldap uid to Keycloak
+		ObjectMapper mapper = new ObjectMapper();
 		try {
 			String newOrg = mapper.writeValueAsString(ldapOrg);
 			orgDetails.add(newOrg);
+
+			String oldLdapId = mapper.writeValueAsString(userDetails);
+			ldapId.add(oldLdapId);
 		} catch (JsonProcessingException e) {
-			throw new AccountTransferException("Could not convert LDAP Organization", e);
+			throw new AccountTransferException("Could not convert LDAP Organization/User", e);
 		}
 
 		// Update the user in Keycloak/UMS
 		ResponseEntity<String> updateUserResponse = keycloakUserManagementService.updateUser(userId, user);
 		if (updateUserResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
-			throw new AccountTransferException(String.format("Error adding organization %s to user %s", ldapOrg.getId(), user.getUsername()));
+			throw new AccountTransferException(String.format("Error adding organization %s and old ldap id %s to user %s", ldapOrg.getId(),
+					userDetails.getUid(), user.getUsername()));
 		}
-		
+
 		logger.debug("Organization {} assigned to User {}", ldapOrg.getId(), user.getUsername());
 	}
-	
+
 	/**
 	 * Loads the orgDetails from the User. Creates the necessary structure if it doesn't exist.
 	 * 
@@ -192,18 +222,44 @@ public class AccountsController {
 			HashMap<String, Object> attributes = new LinkedHashMap<>();
 			user.setAttributes(attributes);
 		}
-		
+
 		// Check if the org is already assigned
-		HashMap<String, Object> attributes = (HashMap<String, Object>)user.getAttributes();
-		List<String> orgDetails = (List<String>)attributes.get(ATTRIBUTE_ORG_DETAILS);
+		HashMap<String, Object> attributes = (HashMap<String, Object>) user.getAttributes();
+		List<String> orgDetails = (List<String>) attributes.get(ATTRIBUTE_ORG_DETAILS);
+
 		if (orgDetails == null) {
 			orgDetails = new ArrayList<>();
 			attributes.put(ATTRIBUTE_ORG_DETAILS, orgDetails);
 		}
-		
+
 		return orgDetails;
 	}
-	
+
+	/**
+	 * Loads the oldLdapId from the user, Creates the necessary structure if it
+	 * doesn't exist.
+	 * 
+	 * @param user
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	private List<String> loadLdapId(User user) {
+		if (user.getAttributes() == null) {
+			HashMap<String, Object> attributes = new LinkedHashMap<>();
+			user.setAttributes(attributes);
+		}
+
+		HashMap<String, Object> attributes = (HashMap<String, Object>) user.getAttributes();
+		List<String> oldLdapPId = (List<String>) attributes.get(ATTRIBUTE_OLD_LDAP_ID);
+
+		if (oldLdapPId == null) {
+			oldLdapPId = new ArrayList<>();
+			attributes.put(ATTRIBUTE_OLD_LDAP_ID, oldLdapPId);
+		}
+
+		return oldLdapPId;
+	}
+
 	/**
 	 * Checks if the LDAP organization exists on the Keycloak user.
 	 * 
@@ -211,20 +267,60 @@ public class AccountsController {
 	 * @param ldapOrg The LDAP organization
 	 * @return True if the organization already exists
 	 */
-	private Boolean organizationExists(List<String> kcOrgs , OrgDetails ldapOrg) {
-		ObjectMapper mapper  = new ObjectMapper();
-		for (String org: kcOrgs) {
+	private Boolean organizationExists(List<String> kcOrgs, OrgDetails ldapOrg) {
+		ObjectMapper mapper = new ObjectMapper();
+		for (String org : kcOrgs) {
 			try {
 				OrgDetails kcOrg = mapper.readValue(org, OrgDetails.class);
 				if (kcOrg.equals(ldapOrg)) {
 					return Boolean.TRUE;
-				}			
+				}
 			} catch (JsonProcessingException e) {
 				// This is unlikely. Just log and move on.
 				logger.error(e.getMessage());
 			}
 		}
 		return Boolean.FALSE;
+	}
+
+	/**
+	 * Checks if the LDAP uid exists on the Keycloak user
+	 * 
+	 * @param kcLdapId
+	 * @param ldapUser
+	 * @return
+	 */
+	private Boolean ldapIdExists(List<String> kcLdapId, String ldapUser, UserDetails ldapUserDetails) {
+		ObjectMapper mapper = new ObjectMapper();
+		for (String user : kcLdapId) {
+			try {
+				UserDetails userDetail = mapper.readValue(user, UserDetails.class);
+				if (userDetail.equals(ldapUserDetails)) {
+					return Boolean.TRUE;
+				}
+			} catch (JsonProcessingException e) {
+				// This is unlikely. Just log and move on.
+				logger.error(e.getMessage());
+			}
+
+		}
+		return Boolean.FALSE;
+	}
+
+	/**
+	 * creates LDAP user model
+	 * 
+	 * @param ldapUser
+	 * @return
+	 */
+	private UserDetails createLdapUser(String ldapUser) {
+		String[] ldapUserAttributes = ldapUser.split(",");
+		UserDetails userDetails = new UserDetails();
+		String uid = ldapUserAttributes[0].split("=")[1];
+		String org = ldapUserAttributes[1].split("=")[1];
+		userDetails.setUid(uid);
+		userDetails.setOrg(org);
+		return userDetails;
 	}
 
 	/**
