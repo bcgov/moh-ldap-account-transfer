@@ -62,8 +62,6 @@ public class AccountsController {
 	@Autowired
 	private KeycloakUserManagementService keycloakUserManagementService;
 
-	private User user;
-
 	/**
 	 * Accepts an account transfer request and, if the credentials are valid,
 	 * transfers the specified application roles from ldap to Keycloak
@@ -77,6 +75,7 @@ public class AccountsController {
 		Jwt authToken = (Jwt) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 		String userId = authToken.getClaimAsString(SUB_CLAIM);
 		Boolean transferError = Boolean.FALSE;
+		List<String> kcOldLdapId = new ArrayList<>();
 
 		logger.debug("Attempting account transfer for User {} on Application {}", accountTransferRequest.getUsername(),
 				accountTransferRequest.getApplication());
@@ -90,16 +89,24 @@ public class AccountsController {
 			return ResponseEntity.ok(response);
 		}
 
-		try {
-			user = loadUserInfo(userId);
-		} catch (AccountTransferException e) {
-			logger.error(e.getMessage());
-			transferError = Boolean.TRUE;
+		// Look up the user in Keycloak/UMS
+		ResponseEntity<User> getUserResponse = keycloakUserManagementService.getUser(userId);
+		if (getUserResponse.getStatusCode() != HttpStatus.OK) {
+
+			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
+					String.format("Could not get User info for user %s", userId));
+			return ResponseEntity.ok(response);
+
 		}
 
-		// Check if LdapId already exists in KC
-		List<String> kcOldLdapId = loadLdapId(user);
-		boolean oldLdapIdExists = ldapIdExists(kcOldLdapId, ldapResponse.getUserName());
+		User user = getUserResponse.getBody();
+		// load LdapId from keycloak
+		kcOldLdapId = loadLdapId(user);
+
+		// Check if LDAP user id already exists
+		UserDetails ldapUserDetails = createLdapUser(ldapResponse.getUserName());
+		boolean oldLdapIdExists = ldapIdExists(kcOldLdapId, ldapResponse.getUserName(), ldapUserDetails);
+
 		if (oldLdapIdExists) {
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
 					String.format("Account already transferred for the role %s and application %s",
@@ -138,10 +145,8 @@ public class AccountsController {
 			// If the role transfer was successful, transfer the Organization as well
 
 			try {
-				transferOrganization(userId, ldapResponse.getOrgDetails(), user);
-				// If both role and org transfer was successful, add ldap user to KC user
-				// attribute
-				addOldLdapId(userId, kcOldLdapId, ldapResponse);
+				transferOrganization(userId, ldapResponse.getOrgDetails(), user, ldapUserDetails);
+
 			} catch (AccountTransferException e) {
 				logger.error(e.getMessage());
 				transferError = Boolean.TRUE;
@@ -166,41 +171,16 @@ public class AccountsController {
 	}
 
 	/**
-	 * Adds the LDAP user to Keycloak
+	 * Transfers the users Organization and User Id from LDAP to Keycloak.
 	 * 
-	 * @param userId
-	 * @param kcLdapId
-	 * @param ldapResponse
+	 * @param userId The Keycloak userId
+	 * @param ldapOrg The LDAP org
+	 * @param user The Keycloak user
+	 * @param userDetails The LDAP userDetails
 	 * @throws AccountTransferException
 	 */
-	private void addOldLdapId(String userId, List<String> kcLdapId, LdapResponse ldapResponse) throws AccountTransferException {
-		String ldapUser = ldapResponse.getUserName();
-		UserDetails userDetails = createLdapUser(ldapUser);
-
-		ObjectMapper mapper = new ObjectMapper();
-		try {
-			String newAttribute = mapper.writeValueAsString(userDetails);
-			kcLdapId.add(newAttribute);
-		} catch (JsonProcessingException e) {
-			throw new AccountTransferException("Could not convert LDAP User", e);
-		}
-
-		// Update the user in Keycloak/UMS
-		ResponseEntity<String> updateUserResponse = keycloakUserManagementService.updateUser(userId, user);
-		if (updateUserResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
-			throw new AccountTransferException(
-					String.format("Error adding old ldap id %s to user %s", ldapResponse.getUserName(), user.getUsername()));
-		}
-	}
-
-	/**
-	 * Transfers the users Organization from LDAP to Keycloak.
-	 * 
-	 * @param userId  The Keycloak userId
-	 * @param ldapOrg The organization in LDAP.
-	 * @throws AccountTransferException
-	 */
-	private void transferOrganization(String userId, OrgDetails ldapOrg, User user) throws AccountTransferException {
+	private void transferOrganization(String userId, OrgDetails ldapOrg, User user, UserDetails userDetails)
+			throws AccountTransferException {
 		// Check if the org is already assigned
 		List<String> orgDetails = loadOrgDetails(user);
 		if (organizationExists(orgDetails, ldapOrg)) {
@@ -208,33 +188,28 @@ public class AccountsController {
 			return;
 		}
 
-		// Transfer the organization
+		List<String> ldapId = loadLdapId(user);
+
+		// Transfer the organization and ldap uid to Keycloak
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			String newOrg = mapper.writeValueAsString(ldapOrg);
 			orgDetails.add(newOrg);
+
+			String oldLdapId = mapper.writeValueAsString(userDetails);
+			ldapId.add(oldLdapId);
 		} catch (JsonProcessingException e) {
-			throw new AccountTransferException("Could not convert LDAP Organization", e);
+			throw new AccountTransferException("Could not convert LDAP Organization/User", e);
 		}
 
 		// Update the user in Keycloak/UMS
 		ResponseEntity<String> updateUserResponse = keycloakUserManagementService.updateUser(userId, user);
 		if (updateUserResponse.getStatusCode() != HttpStatus.NO_CONTENT) {
-			throw new AccountTransferException(
-					String.format("Error adding organization %s to user %s", ldapOrg.getId(), user.getUsername()));
+			throw new AccountTransferException(String.format("Error adding organization %s and old ldap id %s to user %s", ldapOrg.getId(),
+					userDetails.getUid(), user.getUsername()));
 		}
 
 		logger.debug("Organization {} assigned to User {}", ldapOrg.getId(), user.getUsername());
-	}
-
-	private User loadUserInfo(String userId) throws AccountTransferException {
-		// Look up the user in Keycloak/UMS
-		ResponseEntity<User> getUserResponse = keycloakUserManagementService.getUser(userId);
-		if (getUserResponse.getStatusCode() != HttpStatus.OK) {
-			throw new AccountTransferException(String.format("Could not get User info for user %s", userId));
-		}
-		User user = getUserResponse.getBody();
-		return user;
 	}
 
 	/**
@@ -318,8 +293,7 @@ public class AccountsController {
 	 * @param ldapUser
 	 * @return
 	 */
-	private Boolean ldapIdExists(List<String> kcLdapId, String ldapUser) {
-		UserDetails ldapUserDetails = createLdapUser(ldapUser);
+	private Boolean ldapIdExists(List<String> kcLdapId, String ldapUser, UserDetails ldapUserDetails) {
 		ObjectMapper mapper = new ObjectMapper();
 		for (String user : kcLdapId) {
 			try {
