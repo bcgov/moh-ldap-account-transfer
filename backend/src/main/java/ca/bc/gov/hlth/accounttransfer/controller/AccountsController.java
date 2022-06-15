@@ -213,8 +213,7 @@ public class AccountsController {
 	}
 
 	/**
-	 * Loads the orgDetails from the User. Creates the necessary structure if it
-	 * doesn't exist.
+	 * Loads the orgDetails from the User. Creates the necessary structure if it doesn't exist.
 	 * 
 	 * @param user The keycloak user
 	 * @return The user's orgDetails
@@ -266,7 +265,7 @@ public class AccountsController {
 	/**
 	 * Checks if the LDAP organization exists on the Keycloak user.
 	 * 
-	 * @param kcOrgs  The orgs from Keycloak
+	 * @param kcOrgs The orgs from Keycloak
 	 * @param ldapOrg The LDAP organization
 	 * @return True if the organization already exists
 	 */
@@ -337,8 +336,7 @@ public class AccountsController {
 		if (StringUtils.isEmpty(ldapResponse.getUserName())) {
 			return ERROR_INVALID_USER_PASS;
 		}
-		// If ldapResponse.authenticated == false -> error user put in the wrong
-		// password
+		// If ldapResponse.authenticated == false -> error user put in the wrong password
 		if (!ldapResponse.getAuthenticated()) {
 			if (ldapResponse.getUnlocked()) {
 				return ERROR_INVALID_USER_PASS;
@@ -347,8 +345,7 @@ public class AccountsController {
 				return ERROR_ACCOUNT_LOCKED;
 			}
 		}
-		// If ldapResponse.mspDirectRole = '' -> error user doesn't actually have the
-		// role
+		// If ldapResponse.mspDirectRole = '' -> error user doesn't actually have the role
 		if (StringUtils.isBlank(ldapResponse.getMspDirectRole())) {
 			return ERROR_NO_ROLE;
 		}
