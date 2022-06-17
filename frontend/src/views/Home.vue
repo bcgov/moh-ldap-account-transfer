@@ -148,6 +148,7 @@ export default {
     },
     handleClose() {
       this.displayError = false
+      this.displayWarning = false
     },
     showError(error, additionalInfo) {
       this.displayError = true
