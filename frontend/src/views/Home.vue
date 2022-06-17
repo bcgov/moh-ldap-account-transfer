@@ -84,7 +84,6 @@ export default {
       })
       return
     }
-
     // Check if role has been transferred
     if (keycloak.tokenParsed.hasOwnProperty('resource_access')) {
       if (keycloak.tokenParsed.resource_access.hasOwnProperty('MSPDIRECT-SERVICE')) {
@@ -95,8 +94,7 @@ export default {
         })
       }
     }
-
-    // Account has partially been transferred
+    // Check if LDAP Account has partially been transferred
     if ((roleExist && !org_details) || (!roleExist && org_details)) {
       this.displayWarning = true
       const message = 'Your MSP Direct Account has been partially transferred. Please complete the transfer below. If this error persists, please contact <a href="https://HLTH.HelpDesk.hlth.gov.bc.ca" target="_blank">HLTH.HelpDesk.gov.bc.ca</a>'
@@ -127,8 +125,7 @@ export default {
           const errorMessage = responseBody.message
           let additionalInfo = ''
           if (errorMessage.startsWith('Invalid Username')) {
-            additionalInfo =
-              'If you forgot your password please try the following link: <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">https://healthnetbc.hlth.gov.bc.ca/?resetPassword</a><br/>If you are still having trouble, please contact the helpdesk at <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
+            additionalInfo = 'If you forgot your password please try the following link: <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">https://healthnetbc.hlth.gov.bc.ca/?resetPassword</a><br/>If you are still having trouble, please contact the helpdesk at <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
           } else if (errorMessage.startsWith('User has no role')) {
             additionalInfo = 'Please contact your access administrator to confirm your access to MSP Direct'
           } else {
