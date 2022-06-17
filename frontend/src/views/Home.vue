@@ -76,6 +76,7 @@ export default {
     var org_details = keycloak.tokenParsed.hasOwnProperty('org_details')
     var old_ldap_id = keycloak.tokenParsed.hasOwnProperty('old_ldap_id')
     var roleExist = false
+    var clientRole = ''
 
     // Check if LDAP account has already been transferred and old uid exists in keycloak
     if (old_ldap_id) {
@@ -84,9 +85,20 @@ export default {
       })
       return
     }
+    // Check if audience exists
+    if (keycloak.tokenParsed.hasOwnProperty('aud')) {
+      const aud = JSON.parse(JSON.stringify(keycloak.tokenParsed.aud))
+      for (let i = 0; i < aud.length; i++) {
+        if (aud[i].startsWith('MSPDIRECT')) {
+          clientRole = aud[i]
+          break
+        }
+      }
+    }
+
     // Check if role has been transferred
     if (keycloak.tokenParsed.hasOwnProperty('resource_access')) {
-      if (keycloak.tokenParsed.resource_access.hasOwnProperty('MSPDIRECT-SERVICE')) {
+      if (keycloak.tokenParsed.resource_access.hasOwnProperty(clientRole)) {
         JSON.parse(JSON.stringify(keycloak.tokenParsed.resource_access), (key, value) => {
           if (key === 'roles' && value.length !== 0) {
             roleExist = true
