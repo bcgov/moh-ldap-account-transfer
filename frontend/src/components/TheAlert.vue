@@ -4,7 +4,7 @@
       <font-awesome-icon :icon="icon"></font-awesome-icon>
     </div>
     <div class="alert-message">
-      <p>{{ this.alert.message }}</p>
+      <p v-html="this.alert.message"></p>
     </div>
     <div class="alert-close">
       <a @click="close()">
