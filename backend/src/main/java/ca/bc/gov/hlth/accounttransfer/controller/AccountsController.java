@@ -179,20 +179,21 @@ public class AccountsController {
 	 */
 	private void transferOrganization(String userId, OrgDetails ldapOrg, User user, UserDetails userDetails)
 			throws AccountTransferException {
-		// Check if the org is already assigned
+				
 		List<String> orgDetails = loadOrgDetails(user);
-		if (organizationExists(orgDetails, ldapOrg)) {
-			logger.debug("Organization {} is already assigned to User {}", ldapOrg.getId(), user.getUsername());
-			return;
-		}
-
 		List<String> ldapId = loadLdapId(user);
 
 		// Transfer the organization and ldap uid to Keycloak
 		ObjectMapper mapper = new ObjectMapper();
 		try {
+			// Check if the org is already assigned
+			if (organizationExists(orgDetails, ldapOrg)) {
+				logger.debug("Organization {} is already assigned to User {}", ldapOrg.getId(), user.getUsername());				
+			}
+			else {
 			String newOrg = mapper.writeValueAsString(ldapOrg);
 			orgDetails.add(newOrg);
+			}
 
 			String oldLdapId = mapper.writeValueAsString(userDetails);
 			ldapId.add(oldLdapId);

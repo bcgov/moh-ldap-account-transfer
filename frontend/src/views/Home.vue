@@ -1,4 +1,7 @@
 <template>
+  <Transition>
+    <AppWarningPanel :visible="displayWarning" :warningMessage="warningMessage" @close="handleClose()" />
+  </Transition>
   <section>
     <h1>Welcome to the MSP Direct Account Transfer</h1>
     <p>To transfer your MSP Direct permissions to your new account you will need to enter your HealthNetBC Username and Password.</p>
@@ -42,12 +45,13 @@ import useVuelidate from '@vuelidate/core'
 import { useAlertStore } from '../stores/alert'
 import { required } from '@vuelidate/validators'
 import AppErrorPanel from '../components/ui/AppErrorPanel.vue'
+import AppWarningPanel from '../components/ui/AppWarningPanel.vue'
 import AccountTransferService from '../services/AccountTransferService'
 import keycloak from '../keycloak'
 
 export default {
   name: 'home',
-  components: { AppErrorPanel },
+  components: { AppErrorPanel, AppWarningPanel },
   setup() {
     return {
       alertStore: useAlertStore(),
@@ -61,30 +65,43 @@ export default {
       submitting: false,
       passwordVisible: false,
       displayError: false,
+      displayWarning: false,
+      warningMessage: '',
       errorMessage: '',
       additionalInfo: '',
     }
   },
+
   created() {
     var org_details = keycloak.tokenParsed.hasOwnProperty('org_details')
     var old_ldap_id = keycloak.tokenParsed.hasOwnProperty('old_ldap_id')
     var roleExist = false
 
-    JSON.parse(JSON.stringify(keycloak.tokenParsed.resource_access), (key, value) => {
-      if (!org_details)
-        if (key === 'roles' && value.length !== 0) {
-          roleExist = true
-        }
-    })
-
+    // Check if LDAP account has already been transferred and old uid exists in keycloak
     if (old_ldap_id) {
       this.$router.push({
         name: 'Notification',
       })
+      return
     }
 
+    // Check if role has been transferred
+    if (keycloak.tokenParsed.hasOwnProperty('resource_access')) {
+      if (keycloak.tokenParsed.resource_access.hasOwnProperty('MSPDIRECT-SERVICE')) {
+        JSON.parse(JSON.stringify(keycloak.tokenParsed.resource_access), (key, value) => {
+          if (key === 'roles' && value.length !== 0) {
+            roleExist = true
+          }
+        })
+      }
+    }
+
+    // Account has partially been transferred
     if ((roleExist && !org_details) || (!roleExist && org_details)) {
-      this.alertStore.setWarningAlert('Your MSP Direct Account has been partially transferred')
+      this.displayWarning = true
+      const message = 'Your MSP Direct Account has been partially transferred. Please complete the transfer bel0w. If this error persists, please contact <a href="https://HLTH.HelpDesk.hlth.gov.bc.ca" target="_blank">https://HLTH.HelpDesk.gov.bc.ca</a>'
+
+      this.showWarning(message)
     }
   },
 
@@ -139,6 +156,10 @@ export default {
       this.displayError = true
       this.errorMessage = error
       this.additionalInfo = additionalInfo
+    },
+    showWarning(warningMessage) {
+      this.displayWarning = true
+      this.warningMessage = warningMessage
     },
     clearUserPass() {
       this.username = ''

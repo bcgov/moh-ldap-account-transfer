@@ -27,9 +27,6 @@ export default {
     goToMSP() {
       window.location.href = config.MSP_DIRECT_URL || import.meta.env.VITE_MSP_DIRECT_URL
     },
-    notificationMessage() {
-      return this.$route.params.data
-    },
   },
 }
 </script>
