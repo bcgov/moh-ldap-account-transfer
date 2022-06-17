@@ -99,7 +99,7 @@ export default {
     // Account has partially been transferred
     if ((roleExist && !org_details) || (!roleExist && org_details)) {
       this.displayWarning = true
-      const message = 'Your MSP Direct Account has been partially transferred. Please complete the transfer bel0w. If this error persists, please contact <a href="https://HLTH.HelpDesk.hlth.gov.bc.ca" target="_blank">https://HLTH.HelpDesk.gov.bc.ca</a>'
+      const message = 'Your MSP Direct Account has been partially transferred. Please complete the transfer below. If this error persists, please contact <a href="https://HLTH.HelpDesk.hlth.gov.bc.ca" target="_blank">HLTH.HelpDesk.gov.bc.ca</a>'
 
       this.showWarning(message)
     }

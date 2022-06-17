@@ -5,11 +5,12 @@
     <br />
     <p>Use the following link to go to the application</p>
     <AppRow>
-      <AppButton @click="goToMSP" mode="secondary" type="button">MSP Direct</AppButton>
+      <AppButton @click="goToMSP" mode="primary" type="button">MSP Direct</AppButton>
     </AppRow>
     <br />
     <p>
-      If you are experiencing access issues, please contact the Ministry HelpDesk : <a :href="helpDeskDirectURL" target="_blank">{{ helpDeskDirectURL }}</a
+      If you are experiencing access issues, please contact the Ministry HelpDesk:<br />
+      <a :href="helpDeskDirectURL" target="_blank">{{ helpDeskDirectURL }}</a
       ><br />
     </p>
   </section>
