@@ -1,7 +1,4 @@
 <template>
-  <Transition>
-    <AppWarningPanel :visible="displayWarning" :warningMessage="warningMessage" @close="handleClose()" />
-  </Transition>
   <section>
     <h1>Welcome to the MSP Direct Account Transfer</h1>
     <p>To transfer your MSP Direct permissions to your new account you will need to enter your HealthNetBC Username and Password.</p>
@@ -45,13 +42,11 @@ import useVuelidate from '@vuelidate/core'
 import { useAlertStore } from '../stores/alert'
 import { required } from '@vuelidate/validators'
 import AppErrorPanel from '../components/ui/AppErrorPanel.vue'
-import AppWarningPanel from '../components/ui/AppWarningPanel.vue'
 import AccountTransferService from '../services/AccountTransferService'
-import keycloak from '../keycloak'
 
 export default {
   name: 'home',
-  components: { AppErrorPanel, AppWarningPanel },
+  components: { AppErrorPanel },
   setup() {
     return {
       alertStore: useAlertStore(),
@@ -65,53 +60,47 @@ export default {
       submitting: false,
       passwordVisible: false,
       displayError: false,
-      displayWarning: false,
-      warningMessage: '',
       errorMessage: '',
       additionalInfo: '',
     }
   },
 
   created() {
-    var org_details = keycloak.tokenParsed.hasOwnProperty('org_details')
-    var old_ldap_id = keycloak.tokenParsed.hasOwnProperty('old_ldap_id')
-    var roleExist = false
-    var clientRole = ''
+    let hasOrgDetails = this.$keycloak.tokenParsed.hasOwnProperty('org_details')
+    let hasOldLdapId = this.$keycloak.tokenParsed.hasOwnProperty('old_ldap_id')
+    let roleExist = false
+    let audience = ''
 
     // Check if LDAP account has already been transferred and old uid exists in keycloak
-    if (old_ldap_id) {
+    if (hasOldLdapId) {
       this.$router.push({
-        name: 'Notification',
+        name: 'AlreadyTransferred',
       })
       return
     }
     // Check if audience exists
-    if (keycloak.tokenParsed.hasOwnProperty('aud')) {
-      const aud = JSON.parse(JSON.stringify(keycloak.tokenParsed.aud))
-      for (let i = 0; i < aud.length; i++) {
-        if (aud[i].startsWith('MSPDIRECT')) {
-          clientRole = aud[i]
-          break
+    if (this.$keycloak.tokenParsed.hasOwnProperty('aud')) {
+      const aud = this.$keycloak.tokenParsed.aud
+      if (typeof aud === 'string') {
+        audience = aud.startsWith('MSPDIRECT-SERVICE') ? aud : ''
+      } else {
+        audience = aud.find((element) => element.startsWith('MSPDIRECT-SERVICE'))
+      }
+    }
+    // Check if role has been transferred
+    if (this.$keycloak.tokenParsed.hasOwnProperty('resource_access')) {
+      if (this.$keycloak.tokenParsed.resource_access.hasOwnProperty(audience)) {
+        const mspDirect = this.$keycloak.tokenParsed.resource_access[audience]
+        if (mspDirect.roles && mspDirect.roles.length > 0) {
+          roleExist = true
         }
       }
     }
-
-    // Check if role has been transferred
-    if (keycloak.tokenParsed.hasOwnProperty('resource_access')) {
-      if (keycloak.tokenParsed.resource_access.hasOwnProperty(clientRole)) {
-        JSON.parse(JSON.stringify(keycloak.tokenParsed.resource_access), (key, value) => {
-          if (key === 'roles' && value.length !== 0) {
-            roleExist = true
-          }
-        })
-      }
-    }
     // Check if LDAP Account has partially been transferred
-    if ((roleExist && !org_details) || (!roleExist && org_details)) {
-      this.displayWarning = true
-      const message = 'Your MSP Direct Account has been partially transferred. Please complete the transfer below. If this error persists, please contact <a href="https://HLTH.HelpDesk.hlth.gov.bc.ca" target="_blank">HLTH.HelpDesk.gov.bc.ca</a>'
+    if ((roleExist && !hasOrgDetails) || (!roleExist && hasOrgDetails)) {
+      const warningMessage = 'Your MSP Direct Account has been partially transferred. Please complete the transfer below. If this error persists, please contact <a href="https://HLTH.HelpDesk.hlth.gov.bc.ca" target="_blank">HLTH.HelpDesk.gov.bc.ca</a>'
 
-      this.showWarning(message)
+      this.alertStore.setWarningAlert(warningMessage)
     }
   },
 
@@ -147,7 +136,7 @@ export default {
           this.clearUserPass()
         }
         if (responseBody.status === 'success') {
-          //Navigate to the Confirmation
+          //Navigate to the Confirmation page on success
           this.alertStore.setSuccessAlert(responseBody.message)
           this.$router.push({ name: 'Confirmation' })
         }
@@ -166,10 +155,6 @@ export default {
       this.displayError = true
       this.errorMessage = error
       this.additionalInfo = additionalInfo
-    },
-    showWarning(warningMessage) {
-      this.displayWarning = true
-      this.warningMessage = warningMessage
     },
     clearUserPass() {
       this.username = ''
