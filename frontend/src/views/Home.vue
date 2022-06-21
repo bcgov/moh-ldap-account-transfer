@@ -66,8 +66,8 @@ export default {
   },
 
   created() {
-    let hasOrgDetails = this.$keycloak.tokenParsed.hasOwnProperty('org_details')
-    let hasOldLdapId = this.$keycloak.tokenParsed.hasOwnProperty('old_ldap_id')
+    const hasOrgDetails = this.$keycloak.tokenParsed.hasOwnProperty('org_details')
+    const hasOldLdapId = this.$keycloak.tokenParsed.hasOwnProperty('old_ldap_id')
     let roleExist = false
     let audience = ''
 
@@ -126,7 +126,8 @@ export default {
           const errorMessage = responseBody.message
           let additionalInfo = ''
           if (errorMessage.startsWith('Invalid Username')) {
-            additionalInfo = 'If you forgot your password please try the following link: <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">https://healthnetbc.hlth.gov.bc.ca/?resetPassword</a><br/>If you are still having trouble, please contact the helpdesk at <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
+            additionalInfo =
+              'If you forgot your password please try the following link: <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">https://healthnetbc.hlth.gov.bc.ca/?resetPassword</a><br/>If you are still having trouble, please contact the helpdesk at <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
           } else if (errorMessage.startsWith('User has no role')) {
             additionalInfo = 'Please contact your access administrator to confirm your access to MSP Direct'
           } else {
@@ -135,8 +136,8 @@ export default {
           this.showError(errorMessage, additionalInfo)
           this.clearUserPass()
         }
+        // Navigate to the Confirmation page on success
         if (responseBody.status === 'success') {
-          //Navigate to the Confirmation page on success
           this.alertStore.setSuccessAlert(responseBody.message)
           this.$router.push({ name: 'Confirmation' })
         }
