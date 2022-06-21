@@ -98,7 +98,7 @@ export default {
     }
     // Check if LDAP Account has partially been transferred
     if ((roleExist && !hasOrgDetails) || (!roleExist && hasOrgDetails)) {
-      const warningMessage = 'Your MSP Direct Account has been partially transferred. Please complete the transfer below. If this error persists, please contact <a href="https://HLTH.HelpDesk.hlth.gov.bc.ca" target="_blank">HLTH.HelpDesk.gov.bc.ca</a>'
+      const warningMessage = 'Your MSP Direct Account has been partially transferred. Please complete the transfer below. If this error persists, please contact the helpdesk at (250) 952-1234 or <b><a href="mailto:hlth.helpdesk@gov.bc.ca">hlth.helpdesk@gov.bc.ca</a></b>'
 
       this.alertStore.setWarningAlert(warningMessage)
     }

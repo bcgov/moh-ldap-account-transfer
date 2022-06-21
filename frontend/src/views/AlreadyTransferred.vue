@@ -9,7 +9,7 @@
     <br />
     <p>
       If you are experiencing access issues, please contact the Ministry HelpDesk:<br />
-      <a href="http://HLTH.HelpDesk.gov.bc.ca/" target="_blank">HLTH.HelpDesk.gov.bc.ca</a>
+      <b><a href="mailto:hlth.helpdesk@gov.bc.ca">hlth.helpdesk@gov.bc.ca</a></b>
     </p>
   </section>
 </template>
@@ -25,7 +25,7 @@ export default {
 }
 </script>
 
-<style>
+<style scoped>
 .description {
   font-weight: bold;
   font-size: 20px;
