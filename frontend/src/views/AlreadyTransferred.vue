@@ -8,8 +8,8 @@
     </AppRow>
     <br />
     <p>
-      If you are experiencing access issues, please contact the Ministry HelpDesk:<br />
-      <b><a href="mailto:hlth.helpdesk@gov.bc.ca">hlth.helpdesk@gov.bc.ca</a></b>
+      If you are experiencing access issues, please contact the helpdesk at:<br />
+      <b>(250) 952-1234</b> or <b><a href="mailto:hlth.helpdesk@gov.bc.ca">hlth.helpdesk@gov.bc.ca</a></b>
     </p>
   </section>
 </template>
