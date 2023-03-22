@@ -52,6 +52,7 @@ public class AccountsController {
 	private static final String ERROR_INVALID_USER_PASS = "Invalid Username or Password";
 	private static final String ERROR_ACCOUNT_LOCKED = "Account is locked";
 	private static final String ERROR_NO_ROLE = "User has no role";
+	private static final String ERROR_ORG_EXIST = "AT001";
 
 	@Autowired
 	private ClientsLookup clientsLookup;
@@ -109,6 +110,13 @@ public class AccountsController {
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
 					String.format("Account already transferred for the role %s and application %s",
 							ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
+			return ResponseEntity.ok(response);
+		}
+		List<String> orgDetails = loadOrgDetails(user);
+		//Check if org already exist( Assigned via any other app)
+		if (!orgDetails.isEmpty()) {
+			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String
+					.format("%s #: An error has occurred. Please contact the group administrator line.", ERROR_ORG_EXIST));
 			return ResponseEntity.ok(response);
 		}
 
@@ -187,7 +195,7 @@ public class AccountsController {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			// Check if the org is already assigned
-			if (organizationExists(orgDetails, ldapOrg)) {
+			if (!orgDetails.isEmpty()) {
 				logger.debug("Organization {} is already assigned to User {}", ldapOrg.getId(), user.getUsername());
 			} else {
 				String newOrg = mapper.writeValueAsString(ldapOrg);
