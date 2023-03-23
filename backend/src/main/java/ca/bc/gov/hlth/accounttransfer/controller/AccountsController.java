@@ -52,6 +52,7 @@ public class AccountsController {
 	private static final String ERROR_INVALID_USER_PASS = "Invalid Username or Password";
 	private static final String ERROR_ACCOUNT_LOCKED = "Account is locked";
 	private static final String ERROR_NO_ROLE = "User has no role";
+	private static final String ERROR_LDAP_ACCOUNT_ALREADY_TRANSFERRED = "AT002";
 
 	@Autowired
 	private ClientsLookup clientsLookup;
@@ -111,6 +112,15 @@ public class AccountsController {
 							ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
 			return ResponseEntity.ok(response);
 		}
+		
+		List<String> orgDetails = loadOrgDetails(user);
+		//Check if org already exist( Assigned via user transfer app)
+		if (organizationExists(orgDetails, ldapResponse.getOrgDetails())) {
+			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String
+					.format("%s #: An error has occurred. Please contact the group administrator line.", ERROR_LDAP_ACCOUNT_ALREADY_TRANSFERRED));
+			return ResponseEntity.ok(response);
+		}
+
 
 		// Authentication success, account unlocked, user has a role for the mspdirect
 		// Add the role to the user in Keycloak

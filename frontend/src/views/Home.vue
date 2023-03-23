@@ -125,13 +125,15 @@ export default {
         if (responseBody.status === 'error') {
           const errorMessage = responseBody.message
           let additionalInfo = ''
-          if (errorMessage.startsWith('Invalid Username')) {
-            additionalInfo =
-              'If you forgot your password please try the following link: <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">https://healthnetbc.hlth.gov.bc.ca/?resetPassword</a><br/>If you are still having trouble, please contact the helpdesk at <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
-          } else if (errorMessage.startsWith('User has no role')) {
-            additionalInfo = 'Please contact your access administrator to confirm your access to MSP Direct'
-          } else {
-            additionalInfo = 'If you believe you are seeing this message in error, please contact the helpdesk at: <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
+          if (!errorMessage.startsWith('AT002')) {
+            if (errorMessage.startsWith('Invalid Username')) {
+              additionalInfo =
+                'If you forgot your password please try the following link: <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">https://healthnetbc.hlth.gov.bc.ca/?resetPassword</a><br/>If you are still having trouble, please contact the helpdesk at <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
+            } else if (errorMessage.startsWith('User has no role')) {
+              additionalInfo = 'Please contact your access administrator to confirm your access to MSP Direct'
+            } else {
+              additionalInfo = 'If you believe you are seeing this message in error, please contact the helpdesk at: <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
+            }
           }
           this.showError(errorMessage, additionalInfo)
           this.clearUserPass()
