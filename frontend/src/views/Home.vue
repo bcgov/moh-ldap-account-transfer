@@ -126,8 +126,7 @@ export default {
         if (responseBody.status === 'error') {
           const errorMessage = responseBody.message
           let additionalInfo = ''
-          console.log(errorMessage)
-          if (!errorMessage.startsWith('AT001') || !errorMessage.startsWith('AT002')) {
+          if (!errorMessage.startsWith('AT001')) {
             if (errorMessage.startsWith('Invalid Username')) {
               additionalInfo =
                 'If you forgot your password please try the following link: <a href="https://healthnetbc.hlth.gov.bc.ca/?resetPassword" target="_blank">https://healthnetbc.hlth.gov.bc.ca/?resetPassword</a><br/>If you are still having trouble, please contact the helpdesk at <b>(250) 952-1234</b> or <b>hlth.helpdesk@gov.bc.ca</b>'
