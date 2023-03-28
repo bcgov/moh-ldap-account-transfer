@@ -52,7 +52,8 @@ public class AccountsController {
 	private static final String ERROR_INVALID_USER_PASS = "Invalid Username or Password";
 	private static final String ERROR_ACCOUNT_LOCKED = "Account is locked";
 	private static final String ERROR_NO_ROLE = "User has no role";
-	private static final String ERROR_LDAP_ACCOUNT_ALREADY_TRANSFERRED = "AT002";
+	private static final String ERROR_LDAP_ACCOUNT_ALREADY_TRANSFERRED = "UAT02";
+	private static final String CONTACT_NO = "(604) 683-7520";
 
 	@Autowired
 	private ClientsLookup clientsLookup;
@@ -117,7 +118,7 @@ public class AccountsController {
 		//Check if org already exist( Assigned via user transfer app)
 		if (organizationExists(orgDetails, ldapResponse.getOrgDetails())) {
 			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR, String
-					.format("%s #: An error has occurred. Please contact the group administrator line.", ERROR_LDAP_ACCOUNT_ALREADY_TRANSFERRED));
+					.format("%s #: An error has occurred. Please contact the group administrator line at %s.", ERROR_LDAP_ACCOUNT_ALREADY_TRANSFERRED, CONTACT_NO));
 			return ResponseEntity.ok(response);
 		}
 
