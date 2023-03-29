@@ -40,6 +40,7 @@
 <script>
 import useVuelidate from '@vuelidate/core'
 import { useAlertStore } from '../stores/alert'
+import { useTransferStore } from '../stores/transfer'
 import { required } from '@vuelidate/validators'
 import AppErrorPanel from '../components/ui/AppErrorPanel.vue'
 import AccountTransferService from '../services/AccountTransferService'
@@ -50,6 +51,7 @@ export default {
   setup() {
     return {
       alertStore: useAlertStore(),
+      transferStore: useTransferStore(),
       v$: useVuelidate(),
     }
   },
@@ -72,7 +74,7 @@ export default {
     let audience = ''
 
     // Check if LDAP account has already been transferred and old uid exists in keycloak
-    if (hasOldLdapId) {
+    if (hasOldLdapId || this.transferStore.complete) {
       this.$router.push({
         name: 'AlreadyTransferred',
       })
@@ -139,6 +141,7 @@ export default {
         // Navigate to the Confirmation page on success
         if (responseBody.status === 'success') {
           this.alertStore.setSuccessAlert(responseBody.message)
+          this.transferStore.complete = true
           this.$router.push({ name: 'Confirmation' })
         }
       } catch (error) {
