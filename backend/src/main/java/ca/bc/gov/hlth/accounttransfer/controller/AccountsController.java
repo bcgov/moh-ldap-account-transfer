@@ -100,19 +100,10 @@ public class AccountsController {
 		}
 
 		User user = getUserResponse.getBody();
-		// load LdapId from keycloak
-		List<String> kcOldLdapId = loadLdapId(user);
 
 		// Check if LDAP user id already exists
-		UserDetails ldapUserDetails = createLdapUser(ldapResponse.getUserName());
-		boolean oldLdapIdExists = ldapIdExists(kcOldLdapId, ldapResponse.getUserName(), ldapUserDetails);
+		UserDetails ldapUserDetails = createLdapUser(ldapResponse.getUserName());	
 
-		if (oldLdapIdExists) {
-			AccountTransferResponse response = new AccountTransferResponse(StatusEnum.ERROR,
-					String.format("Account already transferred for the role %s and application %s",
-							ldapResponse.getMspDirectRole().toUpperCase(), MSPDIRECT));
-			return ResponseEntity.ok(response);
-		}
 		List<String> orgDetails = loadOrgDetails(user);
 		//Check if org already exist( Assigned via any other app)
 		if (!orgDetails.isEmpty()) {
@@ -267,53 +258,6 @@ public class AccountsController {
 		}
 
 		return oldLdapPId;
-	}
-
-	/**
-	 * Checks if the LDAP organization exists on the Keycloak user.
-	 * 
-	 * @param kcOrgs The orgs from Keycloak
-	 * @param ldapOrg The LDAP organization
-	 * @return True if the organization already exists
-	 */
-	private Boolean organizationExists(List<String> kcOrgs, OrgDetails ldapOrg) {
-		ObjectMapper mapper = new ObjectMapper();
-		for (String org : kcOrgs) {
-			try {
-				OrgDetails kcOrg = mapper.readValue(org, OrgDetails.class);
-				if (kcOrg.equals(ldapOrg)) {
-					return Boolean.TRUE;
-				}
-			} catch (JsonProcessingException e) {
-				// This is unlikely. Just log and move on.
-				logger.error(e.getMessage());
-			}
-		}
-		return Boolean.FALSE;
-	}
-
-	/**
-	 * Checks if the LDAP uid exists on the Keycloak user
-	 * 
-	 * @param kcLdapId
-	 * @param ldapUser
-	 * @return
-	 */
-	private Boolean ldapIdExists(List<String> kcLdapId, String ldapUser, UserDetails ldapUserDetails) {
-		ObjectMapper mapper = new ObjectMapper();
-		for (String user : kcLdapId) {
-			try {
-				UserDetails userDetail = mapper.readValue(user, UserDetails.class);
-				if (userDetail.equals(ldapUserDetails)) {
-					return Boolean.TRUE;
-				}
-			} catch (JsonProcessingException e) {
-				// This is unlikely. Just log and move on.
-				logger.error(e.getMessage());
-			}
-
-		}
-		return Boolean.FALSE;
 	}
 
 	/**
