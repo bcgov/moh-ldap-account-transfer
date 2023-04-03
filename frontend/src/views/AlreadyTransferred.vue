@@ -7,10 +7,7 @@
       <AppButton @click="goToMSP" mode="primary" type="button">MSP Direct</AppButton>
     </AppRow>
     <br />
-    <p>
-      If you are experiencing access issues, please contact the helpdesk at:<br />
-      <b>(250) 952-1234</b> or <b><a href="mailto:hlth.helpdesk@gov.bc.ca">hlth.helpdesk@gov.bc.ca</a></b>
-    </p>
+    <p>If you need assistance, please contact the group administrator line at <b>(604) 683-7520.</b></p>
   </section>
 </template>
 
