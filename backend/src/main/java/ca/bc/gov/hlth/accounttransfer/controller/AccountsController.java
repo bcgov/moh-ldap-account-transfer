@@ -187,12 +187,8 @@ public class AccountsController {
 		ObjectMapper mapper = new ObjectMapper();
 		try {
 			// Check if the org is already assigned
-			if (!orgDetails.isEmpty()) {
-				logger.debug("Organization {} is already assigned to User {}", ldapOrg.getId(), user.getUsername());
-			} else {
-				String newOrg = mapper.writeValueAsString(ldapOrg);
-				orgDetails.add(newOrg);
-			}
+			String newOrg = mapper.writeValueAsString(ldapOrg);
+			orgDetails.add(newOrg);
 
 			String oldLdapId = mapper.writeValueAsString(userDetails);
 			ldapId.add(oldLdapId);
